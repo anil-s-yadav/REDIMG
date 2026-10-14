@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 
 android {
-    namespace = "com.redpdf.redimg.resize_image_to_kb"
+    namespace = "com.redpdf.resize_image_to_kb"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,7 +32,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.redpdf.redimg.resize_image_to_kb"
+        applicationId = "com.redpdf.resize_image_to_kb"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

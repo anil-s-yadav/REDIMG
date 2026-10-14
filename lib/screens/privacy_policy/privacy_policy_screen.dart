@@ -36,9 +36,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
       SnackBar(
         content: const Text('Email copied: $_contactEmail'),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -72,9 +70,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Last updated: $_lastUpdated',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: AppTheme.spaceLg),
 
@@ -178,7 +176,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               const SizedBox(height: AppTheme.spaceLg),
               Center(
                 child: Text(
-                  'Package: com.redpdf.redimg.resize_image_to_kb\nLast updated: $_lastUpdated',
+                  'Package: com.redpdf.resize_image_to_kb\nLast updated: $_lastUpdated',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: cs.outline,
@@ -314,9 +312,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Only minimum permissions required:',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: AppTheme.spaceMd),
 

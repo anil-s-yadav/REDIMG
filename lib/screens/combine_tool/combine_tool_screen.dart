@@ -11,6 +11,7 @@ import '../../services/file_service.dart';
 import '../../services/image_processing_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/signature_picker_sheet.dart';
 
 /// Combine Photo & Signature screen matching pro_combine_tool_v2 design.
 class CombineToolScreen extends StatefulWidget {
@@ -34,15 +35,34 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
   OutputFormat _outputFormat = OutputFormat.png;
   final _kbController = TextEditingController();
   int? _targetKB;
+  List<SavedFileMeta> _savedSignatures = [];
+  bool _isLoadingSignatures = false;
 
   final GlobalKey _previewKey = GlobalKey();
   final _photoState = _ItemState(position: const Offset(10, 10), scale: 1.0);
   final _sigState = _ItemState(position: const Offset(10, 310), scale: 1.0);
 
   @override
+  void initState() {
+    super.initState();
+    _loadSavedSignatures();
+  }
+
+  @override
   void dispose() {
     _kbController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedSignatures() async {
+    setState(() => _isLoadingSignatures = true);
+    final list = await FileService.getSavedSignatures();
+    if (mounted) {
+      setState(() {
+        _savedSignatures = list;
+        _isLoadingSignatures = false;
+      });
+    }
   }
 
   Future<void> _pickPhoto() async {
@@ -51,10 +71,31 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
     if (xFile != null) setState(() => _photo = File(xFile.path));
   }
 
-  Future<void> _pickSignature() async {
+  Future<void> _pickSignatureFromGallery() async {
     final picker = ImagePicker();
     final xFile = await picker.pickImage(source: ImageSource.gallery);
-    if (xFile != null) setState(() => _signature = File(xFile.path));
+    if (xFile != null) {
+      setState(() => _signature = File(xFile.path));
+    }
+  }
+
+  Future<void> _pickSignature() async {
+    final chosen = await showSignaturePickerSheet(context);
+    if (chosen != null && mounted) {
+      setState(() => _signature = chosen);
+      _loadSavedSignatures();
+    }
+  }
+
+  void _selectSavedSignature(SavedFileMeta meta) {
+    setState(() => _signature = File(meta.filePath));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Selected "${meta.name}"'),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _resetPositions() {
@@ -124,10 +165,9 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
           }
         }
 
+        final fileLength = await outFile.length();
         if (mounted) {
-          final fileSize = ImageProcessingService.formatFileSize(
-            await outFile.length(),
-          );
+          final fileSize = ImageProcessingService.formatFileSize(fileLength);
           context.push(
             '/result',
             extra: {
@@ -319,15 +359,14 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
               const SizedBox(height: AppTheme.spaceMd),
 
               // ── 2. Signature ────────────────────────────────────
-              _UploadSection(
-                number: '2',
-                title: 'Signature',
-                badge: 'Transparent PNG\npreferred',
+              _SignatureSection(
                 file: _signature,
-                onTap: _pickSignature,
+                savedSignatures: _savedSignatures,
+                isLoadingSaved: _isLoadingSignatures,
+                onPickFromGallery: _pickSignatureFromGallery,
+                onOpenPickerSheet: _pickSignature,
+                onSelectSavedSignature: _selectSavedSignature,
                 onClear: () => setState(() => _signature = null),
-                icon: Icons.draw_rounded,
-                uploadTitle: 'Click to upload signature',
               ),
               const SizedBox(height: AppTheme.spaceLg),
 
@@ -667,6 +706,374 @@ class _UploadSection extends StatelessWidget {
                 : null,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SignatureSection extends StatelessWidget {
+  final File? file;
+  final List<SavedFileMeta> savedSignatures;
+  final bool isLoadingSaved;
+  final VoidCallback onPickFromGallery;
+  final VoidCallback onOpenPickerSheet;
+  final ValueChanged<SavedFileMeta> onSelectSavedSignature;
+  final VoidCallback onClear;
+
+  const _SignatureSection({
+    required this.file,
+    required this.savedSignatures,
+    required this.isLoadingSaved,
+    required this.onPickFromGallery,
+    required this.onOpenPickerSheet,
+    required this.onSelectSavedSignature,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return PremiumCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '2',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Signature',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Transparent PNG preferred',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: cs.outline,
+                ),
+              ),
+              const Spacer(),
+              if (savedSignatures.isNotEmpty)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: onOpenPickerSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.history_edu_rounded,
+                            size: 14,
+                            color: cs.primaryContainer,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${savedSignatures.length} saved',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: cs.primaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+
+          // ── Quick Source Selection Buttons ───────────────────
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPickFromGallery,
+                  icon: const Icon(Icons.photo_library_outlined, size: 16),
+                  label: const Text('From Gallery'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onOpenPickerSheet,
+                  icon: const Icon(Icons.history_edu_rounded, size: 16),
+                  label: Text(
+                    savedSignatures.isEmpty
+                        ? 'Saved in App'
+                        : 'Saved Signs (${savedSignatures.length})',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+
+          // ── Upload Box or Selected Preview ───────────────────
+          if (file == null) ...[
+            UploadArea(
+              onTap: onOpenPickerSheet,
+              icon: Icons.draw_rounded,
+              title: 'Click to select or upload signature',
+              subtitle: 'Choose from Gallery or saved signatures',
+              hasFile: false,
+            ),
+            if (savedSignatures.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spaceMd),
+              Row(
+                children: [
+                  Text(
+                    'Quick Select Saved Signature:',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: onOpenPickerSheet,
+                    child: Text(
+                      'View all',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cs.primaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 96,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: savedSignatures.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final item = savedSignatures[index];
+                    return _QuickSavedSignatureCard(
+                      meta: item,
+                      onTap: () => onSelectSavedSignature(item),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ] else ...[
+            Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Center(
+                    child: Image.file(
+                      file!,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: onClear,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onPickFromGallery,
+                    icon: const Icon(Icons.photo_library_outlined, size: 15),
+                    label: const Text(
+                      'Change: Gallery',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onOpenPickerSheet,
+                    icon: const Icon(Icons.history_edu_rounded, size: 15),
+                    label: Text(
+                      'Change: Saved (${savedSignatures.length})',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickSavedSignatureCard extends StatelessWidget {
+  final SavedFileMeta meta;
+  final VoidCallback onTap;
+
+  const _QuickSavedSignatureCard({
+    required this.meta,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final file = File(meta.filePath);
+
+    return Container(
+      width: 110,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: cs.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: file.existsSync()
+                      ? Image.file(
+                          file,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.draw_rounded,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.draw_rounded,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  meta.formattedSize,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurface,
+                  ),
+                ),
+                Text(
+                  meta.formattedDate,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 9,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

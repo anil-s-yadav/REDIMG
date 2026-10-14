@@ -6,7 +6,6 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:open_filex/open_filex.dart';
@@ -75,6 +74,9 @@ class SavedFileMeta {
     if (ext == '.pdf') return 'pdf';
     final lowerName = name.toLowerCase();
     final lowerTool = toolName.toLowerCase();
+    if (lowerTool.contains('combine') || lowerName.contains('combine')) {
+      return 'image';
+    }
     if (lowerName.contains('sign') ||
         lowerName.contains('sig') ||
         lowerTool.contains('signature')) {
@@ -345,6 +347,42 @@ class FileService {
     // Sort newest first
     files.sort((a, b) => b.savedAt.compareTo(a.savedAt));
     return files;
+  }
+
+  /// Get all saved signature files.
+  static Future<List<SavedFileMeta>> getSavedSignatures() async {
+    final allFiles = await getSavedFiles();
+    final signatures = allFiles.where((f) => f.category == 'signature').toList();
+    final existingPaths = signatures.map((s) => s.filePath).toSet();
+
+    try {
+      final dir = await _outputDir;
+      if (await dir.exists()) {
+        final entities = dir.listSync();
+        for (final entity in entities) {
+          if (entity is File && !existingPaths.contains(entity.path)) {
+            final fileName = path.basename(entity.path).toLowerCase();
+            final ext = path.extension(entity.path).toLowerCase();
+            if (['.png', '.jpg', '.jpeg', '.webp'].contains(ext) &&
+                (fileName.contains('sign') || fileName.contains('sig')) &&
+                !fileName.contains('combine')) {
+              final stat = entity.statSync();
+              signatures.add(SavedFileMeta(
+                filePath: entity.path,
+                name: path.basename(entity.path),
+                toolName: 'Signature Maker',
+                format: ext.replaceFirst('.', '').toUpperCase(),
+                sizeBytes: stat.size,
+                savedAt: stat.modified,
+              ));
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    signatures.sort((a, b) => b.savedAt.compareTo(a.savedAt));
+    return signatures;
   }
 
   /// Add a file record to SharedPreferences.

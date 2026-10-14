@@ -380,11 +380,11 @@ class SettingsScreen extends StatelessWidget {
                             child: InkWell(
                               onTap: () async {
                                 final uri = Uri.parse(
-                                  'https://play.google.com/store/apps/details?id=com.redpdf.redimg.resize_image_to_kb',
+                                  'https://play.google.com/store/apps/details?id=com.redpdf.resize_image_to_kb',
                                 );
                                 // Try market:// intent first (opens Play Store app directly)
                                 final marketUri = Uri.parse(
-                                  'market://details?id=com.redpdf.redimg.resize_image_to_kb',
+                                  'market://details?id=com.redpdf.resize_image_to_kb',
                                 );
                                 if (await canLaunchUrl(marketUri)) {
                                   await launchUrl(marketUri);

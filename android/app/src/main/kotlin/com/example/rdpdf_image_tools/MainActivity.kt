@@ -1,4 +1,4 @@
-package com.redpdf.redimg.resize_image_to_kb
+package com.redpdf.resize_image_to_kb
 
 import android.content.ContentValues
 import android.media.MediaScannerConnection

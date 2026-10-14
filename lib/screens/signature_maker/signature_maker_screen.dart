@@ -9,6 +9,7 @@ import '../../services/file_service.dart';
 import '../../services/image_processing_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/signature_picker_sheet.dart';
 
 /// Signature Maker screen matching premium_signature_maker design.
 class SignatureMakerScreen extends StatefulWidget {
@@ -48,11 +49,10 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
   }
 
   Future<void> _uploadSignature() async {
-    final picker = ImagePicker();
-    final xFile = await picker.pickImage(source: ImageSource.gallery);
-    if (xFile != null) {
+    final chosen = await showSignaturePickerSheet(context);
+    if (chosen != null && mounted) {
       setState(() {
-        _uploadedSignature = File(xFile.path);
+        _uploadedSignature = chosen;
         _signatureController.clear();
       });
     }
@@ -111,21 +111,22 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
         return;
       }
 
-      if (outputFile != null && mounted) {
-        final fileSize = ImageProcessingService.formatFileSize(
-          await outputFile.length(),
-        );
-        context.push(
-          '/result',
-          extra: {
-            'filePath': outputFile.path,
-            'fileSize': fileSize,
-            'dimensions': '600 × 300 px',
-            'format': 'PNG',
-            'toolName': 'Signature Maker',
-            'outputFormat': _outputFormat.name,
-          },
-        );
+      if (outputFile != null) {
+        final fileLength = await outputFile.length();
+        if (mounted) {
+          final fileSize = ImageProcessingService.formatFileSize(fileLength);
+          context.push(
+            '/result',
+            extra: {
+              'filePath': outputFile.path,
+              'fileSize': fileSize,
+              'dimensions': '600 × 300 px',
+              'format': 'PNG',
+              'toolName': 'Signature Maker',
+              'outputFormat': _outputFormat.name,
+            },
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
