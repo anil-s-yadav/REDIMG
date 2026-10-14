@@ -142,7 +142,6 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
           );
         }
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -160,7 +159,9 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.containerMargin),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.containerMargin,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -171,14 +172,7 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceXs),
-              Text(
-                'Draw your signature clearly within the canvas area below.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
+              const SizedBox(height: AppTheme.spaceMd),
 
               // ── Canvas Card ─────────────────────────────────────
               PremiumCard(
@@ -204,6 +198,7 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
                           label: 'Upload',
                           sublabel: 'Transparent\nPNG preferred',
                           onTap: _uploadSignature,
+                          width: 100,
                         ),
                         const SizedBox(width: 12),
                         _ToolButton(
@@ -226,7 +221,7 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
 
                     // Canvas / Preview
                     Container(
-                      height: 280,
+                      height: 200,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -361,12 +356,14 @@ class _ToolButton extends StatelessWidget {
   final String label;
   final String? sublabel;
   final VoidCallback? onTap;
+  final double? width;
 
   const _ToolButton({
     required this.icon,
     required this.label,
     this.sublabel,
     this.onTap,
+    this.width,
   });
 
   @override
@@ -374,6 +371,7 @@ class _ToolButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: width,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerLow,

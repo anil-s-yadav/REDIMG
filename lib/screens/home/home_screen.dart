@@ -8,7 +8,7 @@ abstract final class _HomeToolColors {
   static const passport = Color(0xFF2563EB);
   static const resize = Color(0xFF0891B2);
   static const signature = Color(0xFF7C3AED);
-  static const compress = Color(0xFFEA580C);
+  static const compress = Color(0xFF3B82F6);
   static const combine = Color(0xFF16A34A);
   static const imageToPdf = Color(0xFFDC2626);
 
@@ -129,7 +129,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _SmallToolCard(
                       title: 'Compress Image',
-                      icon: Icons.compress_rounded,
+                      icon: Icons.image,
                       accent: _HomeToolColors.compress,
                       onTap: () => context.push('/compress-image'),
                     ),

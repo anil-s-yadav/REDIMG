@@ -24,7 +24,9 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
   bool _isProcessing = false;
   String _originalSize = '';
   String _originalDimensions = '';
+  String _previewSize = '';
   OutputFormat _outputFormat = OutputFormat.png;
+
 
   // New dimension-based resize state variables
   int _resizeModeIndex = 0; // 0 = By Dimensions (Px), 1 = By File Size (KB)
@@ -65,6 +67,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
         _selectedImage = file;
         _previewImage = null; // Reset preview
         _originalSize = ImageProcessingService.formatFileSize(bytes);
+        _previewSize = _originalSize;
         _originalDimensions = ''; // Will be set after decode
       });
 
@@ -114,8 +117,11 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
       }
 
       if (result != null && mounted) {
+        final length = await result.length();
+        final formatted = ImageProcessingService.formatFileSize(length);
         setState(() {
           _previewImage = result;
+          _previewSize = formatted;
         });
       }
     } catch (e) {
@@ -135,32 +141,33 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
   }
 
   void _onWidthChanged(String val) {
-    if (!_lockAspectRatio ||
-        _originalWidth == null ||
-        _originalHeight == null) {
-      return;
+    if (_lockAspectRatio &&
+        _originalWidth != null &&
+        _originalHeight != null) {
+      final width = int.tryParse(val);
+      if (width != null && width > 0) {
+        final ratio = _originalWidth! / _originalHeight!;
+        final height = (width / ratio).round();
+        _heightController.text = height.toString();
+      }
     }
-    final width = int.tryParse(val);
-    if (width != null && width > 0) {
-      final ratio = _originalWidth! / _originalHeight!;
-      final height = (width / ratio).round();
-      _heightController.text = height.toString();
-    }
+    _debounceUpdatePreview();
   }
 
   void _onHeightChanged(String val) {
-    if (!_lockAspectRatio ||
-        _originalWidth == null ||
-        _originalHeight == null) {
-      return;
+    if (_lockAspectRatio &&
+        _originalWidth != null &&
+        _originalHeight != null) {
+      final height = int.tryParse(val);
+      if (height != null && height > 0) {
+        final ratio = _originalWidth! / _originalHeight!;
+        final width = (height * ratio).round();
+        _widthController.text = width.toString();
+      }
     }
-    final height = int.tryParse(val);
-    if (height != null && height > 0) {
-      final ratio = _originalWidth! / _originalHeight!;
-      final width = (height * ratio).round();
-      _widthController.text = width.toString();
-    }
+    _debounceUpdatePreview();
   }
+
 
   void _setPreset(int index) {
     setState(() {
@@ -220,10 +227,10 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
 
     setState(() => _isProcessing = false);
 
-    if (result != null && mounted) {
-      final fileSize = ImageProcessingService.formatFileSize(
-        await result.length(),
-      );
+    if (result != null) {
+      final length = await result.length();
+      if (!mounted) return;
+      final fileSize = ImageProcessingService.formatFileSize(length);
       context.push(
         '/result',
         extra: {
@@ -472,7 +479,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                   ],
                 ),
               ),
-              // const SizedBox(height: AppTheme.spaceLg),
+              const SizedBox(height: AppTheme.spaceSm),
 
               // ── Image Preview / Upload ──────────────────────────
               PremiumCard(
@@ -529,168 +536,275 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                     const SizedBox(height: AppTheme.spaceSm),
 
                     // Stats row
-                    Row(
-                      children: [
-                        // Original stat
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceSm),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radiusDefault,
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Original stat
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(AppTheme.spaceSm),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusDefault,
+                                ),
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHigh,
+                                ),
                               ),
-                              border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHigh,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.image,
-                                      size: 16,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'ORIGINAL',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        letterSpacing: 0.5,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.image,
+                                        size: 16,
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.onSurfaceVariant,
+                                        ).colorScheme.outline,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _originalSize.isEmpty ? '—' : _originalSize,
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'ORIGINAL',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.5,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                if (_originalDimensions.isNotEmpty)
-                                  Text(
-                                    _originalDimensions,
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w300,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
+                                  const SizedBox(height: 6),
+                                  if (_resizeModeIndex == 0) ...[
+                                    // Dimension is prominent
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            (_originalWidth != null &&
+                                                    _originalHeight != null)
+                                                ? '$_originalWidth × $_originalHeight'
+                                                : (_originalDimensions.isNotEmpty
+                                                    ? _originalDimensions
+                                                    : '—'),
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w700,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                              height: 1.1,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (_originalWidth != null &&
+                                            _originalHeight != null) ...[
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            'px',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.outline,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.spaceSm),
-                        // Final stat / Target dimensions stat
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceSm),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radiusDefault,
-                              ),
-                              border: Border.all(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.2),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      _resizeModeIndex == 1
-                                          ? Icons.compress
-                                          : Icons.aspect_ratio,
-                                      size: 16,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                    ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(height: 3),
+                                    // Size is secondary
                                     Text(
-                                      _resizeModeIndex == 1
-                                          ? 'FINAL SIZE'
-                                          : 'NEW DIMENSIONS',
+                                      _originalSize.isEmpty
+                                          ? '—'
+                                          : _originalSize,
                                       style: TextStyle(
                                         fontFamily: 'Inter',
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        letterSpacing: 0.5,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ] else ...[
+                                    // Mode 1: Size is prominent
+                                    Text(
+                                      _originalSize.isEmpty
+                                          ? '—'
+                                          : _originalSize,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                        height: 1.1,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      _originalDimensions.isEmpty
+                                          ? '—'
+                                          : _originalDimensions,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppTheme.spaceSm),
+                          // Final stat / Target dimensions stat
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(AppTheme.spaceSm),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusDefault,
+                                ),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _resizeModeIndex == 1
+                                            ? Icons.compress
+                                            : Icons.aspect_ratio,
+                                        size: 16,
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.primaryContainer,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    if (_resizeModeIndex == 1) ...[
+                                      const SizedBox(width: 4),
                                       Text(
-                                        '$_targetKB',
+                                        _resizeModeIndex == 1
+                                            ? 'FINAL SIZE'
+                                            : 'NEW DIMENSIONS',
                                         style: TextStyle(
                                           fontFamily: 'Inter',
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primaryContainer,
-                                          height: 1,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        'KB',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 16,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.5,
                                           color: Theme.of(
                                             context,
                                           ).colorScheme.primaryContainer,
                                         ),
                                       ),
-                                    ] else ...[
-                                      Expanded(
-                                        child: Text(
-                                          (_widthController.text.isEmpty ||
-                                                  _heightController
-                                                      .text
-                                                      .isEmpty)
-                                              ? '—'
-                                              : '${_widthController.text} × ${_heightController.text}',
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  if (_resizeModeIndex == 0) ...[
+                                    // New Dimension (prominent, blue)
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            (_widthController.text.isEmpty ||
+                                                    _heightController
+                                                        .text
+                                                        .isEmpty)
+                                                ? '—'
+                                                : '${_widthController.text} × ${_heightController.text}',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w700,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.primaryContainer,
+                                              height: 1.1,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'px',
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primaryContainer,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    // New Size (secondary, blue)
+                                    Text(
+                                      _previewSize.isNotEmpty
+                                          ? _previewSize
+                                          : (_originalSize.isNotEmpty
+                                              ? _originalSize
+                                              : '—'),
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ] else ...[
+                                    // Mode 1: Target KB prominent
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      children: [
+                                        Text(
+                                          '$_targetKB',
                                           style: TextStyle(
                                             fontFamily: 'Inter',
                                             fontSize: 18,
@@ -698,66 +812,80 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                                             color: Theme.of(
                                               context,
                                             ).colorScheme.primaryContainer,
-                                            height: 1,
+                                            height: 1.1,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        'px',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primaryContainer,
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'KB',
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primaryContainer,
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      _originalDimensions.isNotEmpty
+                                          ? _originalDimensions
+                                          : '—',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
                                       ),
-                                    ],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ],
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFDCFCE7),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.verified,
-                                        size: 12,
-                                        color: Color(0xFF16A34A),
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Text(
-                                        _resizeModeIndex == 1
-                                            ? 'GUARANTEED UNDER LIMIT'
-                                            : 'EXACT TARGET RESOLUTION',
-                                        style: const TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.3,
-                                          color: Color(0xFF166534),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.verified,
+                                          size: 12,
+                                          color: Color(0xFF16A34A),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          _resizeModeIndex == 1
+                                              ? 'GUARANTEED UNDER LIMIT'
+                                              : 'EXACT TARGET RESOLUTION',
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.3,
+                                            color: Color(0xFF166534),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -978,6 +1106,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                   min: 1,
                   max: 100,
                   onChanged: (val) => setState(() => _qualityValue = val),
+                  onChangeEnd: (_) => _updatePreview(),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),

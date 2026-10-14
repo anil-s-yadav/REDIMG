@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_theme.dart';
@@ -9,6 +8,32 @@ import '../../widgets/common_widgets.dart';
 /// Settings screen.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  static const String _privacyPolicyUrl =
+      'https://anil-s-yadav.github.io/REDIMG/privacy-policy.html';
+  static const String _termsUrl =
+      'https://anil-s-yadav.github.io/REDIMG/terms.html';
+
+  Future<void> _openUrl(BuildContext context, String urlString) async {
+    final uri = Uri.parse(urlString);
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open link: $urlString')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open link: $urlString')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +54,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppTheme.spaceMd),
-              // Text(
-              //   'Customize your experience.',
-              //   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              //     color: Theme.of(context).colorScheme.onSurfaceVariant,
-              //   ),
-              // ),
-              // const SizedBox(height: AppTheme.spaceLg),
 
               // ── Appearance ──────────────────────────────────────
               PremiumCard(
@@ -49,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
                       subtitle: 'Switch between light and dark theme',
                       trailing: Switch.adaptive(
                         value: isDark,
-                        activeColor: Theme.of(
+                        activeThumbColor: Theme.of(
                           context,
                         ).colorScheme.primaryContainer,
                         onChanged: (_) => themeProvider.toggleTheme(),
@@ -73,10 +91,27 @@ class SettingsScreen extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     _SettingTile(
-                      icon: Icons.description_rounded,
+                      icon: Icons.privacy_tip_outlined,
                       title: 'Privacy Policy',
-                      subtitle: 'Read our privacy policy',
-                      onTap: () => context.push('/privacy-policy'),
+                      subtitle: 'View our online privacy policy',
+                      trailing: Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      onTap: () => _openUrl(context, _privacyPolicyUrl),
+                    ),
+                    const Divider(height: 1),
+                    _SettingTile(
+                      icon: Icons.gavel_rounded,
+                      title: 'Terms of Service',
+                      subtitle: 'Terms & conditions and premium policy',
+                      trailing: Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      onTap: () => _openUrl(context, _termsUrl),
                     ),
                     const Divider(height: 1),
                     const SizedBox(height: AppTheme.spaceSm),
