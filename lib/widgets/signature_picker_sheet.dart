@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import '../services/file_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'signature_viewer_modal.dart';
+import 'trimmed_signature_image.dart';
 
 /// Shows a bottom sheet allowing the user to pick a signature
 /// either from their device gallery or from saved signatures in the app.
@@ -424,29 +426,62 @@ class _SavedSignatureCard extends StatelessWidget {
               children: [
                 // Signature image preview box
                 Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: file.existsSync()
-                        ? Image.file(
-                            file,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.broken_image_rounded,
-                              color: Colors.grey,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.draw_rounded,
-                            color: Colors.grey,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey.shade200,
                           ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        child: file.existsSync()
+                            ? TrimmedSignatureImage(
+                                file: file,
+                                fit: BoxFit.contain,
+                                errorWidget: const Icon(
+                                  Icons.broken_image_rounded,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.draw_rounded,
+                                color: Colors.grey,
+                              ),
+
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () {
+                            showSignatureViewerModal(
+                              context,
+                              meta: meta,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.visibility_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),

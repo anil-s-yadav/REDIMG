@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// Centralized theme definitions for the RdPdf Image Tools application.
@@ -39,68 +38,69 @@ class AppTheme {
     ),
   ];
 
-  // ── Text theme using Inter ───────────────────────────────────────────
+  // ── Text theme using native system fonts ─────────────────────────────
   static TextTheme get _textTheme {
-    return TextTheme(
+    return const TextTheme(
       // headline-xl: 32px Bold
-      displayLarge: GoogleFonts.inter(
+      displayLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.w700,
         height: 1.2,
         letterSpacing: -0.64,
       ),
       // headline-lg: 24px Bold
-      displayMedium: GoogleFonts.inter(
+      displayMedium: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         height: 1.3,
         letterSpacing: -0.24,
       ),
       // title-md: 18px Medium
-      titleLarge: GoogleFonts.inter(
+      titleLarge: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w500,
         height: 1.4,
       ),
       // title-sm: 16px Medium
-      titleMedium: GoogleFonts.inter(
+      titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         height: 1.4,
       ),
       // body-md: 16px Light
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w300,
         height: 1.6,
       ),
       // body-sm: 14px Light
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w300,
         height: 1.6,
       ),
       // label-caps: 12px Medium
-      labelSmall: GoogleFonts.inter(
+      labelSmall: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         height: 1.0,
         letterSpacing: 0.6,
       ),
       // label-md
-      labelMedium: GoogleFonts.inter(
+      labelMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         height: 1.4,
       ),
       // label-lg for buttons
-      labelLarge: GoogleFonts.inter(
+      labelLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         height: 1.4,
       ),
     );
   }
+
 
   // ═════════════════════════════════════════════════════════════════════
   //  LIGHT THEME
@@ -149,7 +149,7 @@ class AppTheme {
         centerTitle: true,
         backgroundColor: Colors.white.withValues(alpha: 0.8),
         foregroundColor: AppColors.primaryContainer,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.primaryContainer,
@@ -172,7 +172,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
@@ -186,12 +186,13 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusDefault),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
       ),
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceContainerHigh,
@@ -289,7 +290,7 @@ class AppTheme {
         centerTitle: true,
         backgroundColor: AppColors.darkSurface.withValues(alpha: 0.8),
         foregroundColor: AppColors.inversePrimary,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.inversePrimary,
@@ -312,12 +313,13 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusMd),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
         ),
       ),
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, 48),

@@ -12,6 +12,7 @@ import '../../services/image_processing_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/signature_picker_sheet.dart';
+import '../../widgets/trimmed_signature_image.dart';
 
 /// Combine Photo & Signature screen matching pro_combine_tool_v2 design.
 class CombineToolScreen extends StatefulWidget {
@@ -75,20 +76,31 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
     final picker = ImagePicker();
     final xFile = await picker.pickImage(source: ImageSource.gallery);
     if (xFile != null) {
-      setState(() => _signature = File(xFile.path));
+      final trimmed = await ImageProcessingService.getTrimmedSignatureFile(
+        File(xFile.path),
+      );
+      if (!mounted) return;
+      setState(() => _signature = trimmed);
     }
   }
 
   Future<void> _pickSignature() async {
     final chosen = await showSignaturePickerSheet(context);
     if (chosen != null && mounted) {
-      setState(() => _signature = chosen);
+      final trimmed = await ImageProcessingService.getTrimmedSignatureFile(
+        chosen,
+      );
+      if (!mounted) return;
+      setState(() => _signature = trimmed);
       _loadSavedSignatures();
     }
   }
 
-  void _selectSavedSignature(SavedFileMeta meta) {
-    setState(() => _signature = File(meta.filePath));
+  Future<void> _selectSavedSignature(SavedFileMeta meta) async {
+    final raw = File(meta.filePath);
+    final trimmed = await ImageProcessingService.getTrimmedSignatureFile(raw);
+    if (!mounted) return;
+    setState(() => _signature = trimmed);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Selected "${meta.name}"'),
@@ -97,6 +109,7 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
       ),
     );
   }
+
 
   void _resetPositions() {
     setState(() {
@@ -823,44 +836,6 @@ class _SignatureSection extends StatelessWidget {
           ),
           const SizedBox(height: AppTheme.spaceMd),
 
-          // ── Quick Source Selection Buttons ───────────────────
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onPickFromGallery,
-                  icon: const Icon(Icons.photo_library_outlined, size: 16),
-                  label: const Text('From Gallery'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onOpenPickerSheet,
-                  icon: const Icon(Icons.history_edu_rounded, size: 16),
-                  label: Text(
-                    savedSignatures.isEmpty
-                        ? 'Saved in App'
-                        : 'Saved Signs (${savedSignatures.length})',
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spaceMd),
-
           // ── Upload Box or Selected Preview ───────────────────
           if (file == null) ...[
             UploadArea(
@@ -900,7 +875,7 @@ class _SignatureSection extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 96,
+                height: 68,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: savedSignatures.length,
@@ -914,6 +889,7 @@ class _SignatureSection extends StatelessWidget {
                   },
                 ),
               ),
+
             ],
           ] else ...[
             Stack(
@@ -930,12 +906,14 @@ class _SignatureSection extends StatelessWidget {
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Center(
-                    child: Image.file(
-                      file!,
+                    child: TrimmedSignatureImage(
+                      file: file!,
                       fit: BoxFit.contain,
                     ),
                   ),
                 ),
+
+
                 Positioned(
                   top: 8,
                   right: 8,
@@ -1006,10 +984,7 @@ class _QuickSavedSignatureCard extends StatelessWidget {
   final SavedFileMeta meta;
   final VoidCallback onTap;
 
-  const _QuickSavedSignatureCard({
-    required this.meta,
-    required this.onTap,
-  });
+  const _QuickSavedSignatureCard({required this.meta, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1021,9 +996,7 @@ class _QuickSavedSignatureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -1031,50 +1004,22 @@ class _QuickSavedSignatureCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: file.existsSync()
-                      ? Image.file(
-                          file,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.draw_rounded,
-                            size: 20,
-                            color: Colors.grey,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.draw_rounded,
-                          size: 20,
-                          color: Colors.grey,
-                        ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  meta.formattedSize,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                  ),
-                ),
-                Text(
-                  meta.formattedDate,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 9,
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: file.existsSync()
+                ? TrimmedSignatureImage(
+                    file: file,
+                    fit: BoxFit.contain,
+                    errorWidget: const Icon(
+                      Icons.draw_rounded,
+                      size: 20,
+                      color: Colors.grey,
+                    ),
+                  )
+                : const Icon(Icons.draw_rounded, size: 20, color: Colors.grey),
           ),
         ),
       ),
     );
   }
 }
+

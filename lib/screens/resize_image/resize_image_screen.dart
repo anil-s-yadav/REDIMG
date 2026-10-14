@@ -353,7 +353,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.containerMargin),
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.radiusLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -366,16 +366,6 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceXs),
-              Text(
-                _resizeModeIndex == 0
-                    ? 'Resize your image to custom pixel dimensions with options for stretching, background padding, and compression quality.'
-                    : 'Compress your image to an exact kilobyte threshold while maintaining maximum possible visual fidelity.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
 
               // ── Mode Switcher ──────────────────────────────────
               Container(
@@ -482,7 +472,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceLg),
+              // const SizedBox(height: AppTheme.spaceLg),
 
               // ── Image Preview / Upload ──────────────────────────
               PremiumCard(
@@ -773,7 +763,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                 ),
               ),
 
-              const SizedBox(height: AppTheme.spaceLg),
+              // const SizedBox(height: AppTheme.spaceLg),
 
               // ── Mode-Specific Controls ──────────────────────────
               if (_resizeModeIndex == 0) ...[
@@ -824,7 +814,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                               ),
                             ),
                             const Padding(
-                              padding: EdgeInsets.only(right: 16),
+                              padding: EdgeInsets.only(right: 16, left: 5),
                               child: Text(
                                 'W',
                                 style: TextStyle(
@@ -896,7 +886,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                               ),
                             ),
                             const Padding(
-                              padding: EdgeInsets.only(right: 16),
+                              padding: EdgeInsets.only(right: 16, left: 5),
                               child: Text(
                                 'H',
                                 style: TextStyle(
@@ -1013,7 +1003,7 @@ class _ResizeImageScreenState extends State<ResizeImageScreen> {
                     ],
                   ),
                 ),
-                const Divider(height: 32),
+                const Divider(height: 5),
               ] else ...[
                 // ── Target Size Input ───────────────────────────────
                 Text(

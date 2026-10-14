@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../services/file_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/signature_viewer_modal.dart';
+import '../../widgets/trimmed_signature_image.dart';
 
 /// Screen showing all user-created files organized in tabs.
 class MyFilesScreen extends StatefulWidget {
@@ -270,7 +272,17 @@ class _FileCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => FileService.openFile(meta.filePath),
+          onTap: () {
+            if (meta.category == 'signature') {
+              showSignatureViewerModal(
+                context,
+                meta: meta,
+                onDelete: onDelete,
+              );
+            } else {
+              FileService.openFile(meta.filePath);
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
@@ -280,18 +292,42 @@ class _FileCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                    color: meta.category == 'signature'
+                        ? Colors.white
+                        : catColor.withValues(alpha: isDark ? 0.15 : 0.1),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: meta.category == 'signature'
+                          ? cs.outlineVariant.withValues(alpha: 0.6)
+                          : Colors.transparent,
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
+                  padding: meta.category == 'signature'
+                      ? const EdgeInsets.all(4)
+                      : EdgeInsets.zero,
                   child: isImage && file.existsSync()
-                      ? Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              Icon(_categoryIcon, color: catColor, size: 24),
-                        )
+                      ? (meta.category == 'signature'
+                          ? TrimmedSignatureImage(
+                              file: file,
+                              fit: BoxFit.contain,
+                              errorWidget: Icon(
+                                _categoryIcon,
+                                color: catColor,
+                                size: 24,
+                              ),
+                            )
+                          : Image.file(
+                              file,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Icon(
+                                _categoryIcon,
+                                color: catColor,
+                                size: 24,
+                              ),
+                            ))
                       : Icon(_categoryIcon, color: catColor, size: 24),
+
                 ),
                 const SizedBox(width: 14),
 
@@ -367,18 +403,36 @@ class _FileCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   onSelected: (value) {
+                    if (value == 'view') {
+                      showSignatureViewerModal(
+                        context,
+                        meta: meta,
+                        onDelete: onDelete,
+                      );
+                    }
                     if (value == 'open') FileService.openFile(meta.filePath);
                     if (value == 'share') onShare();
                     if (value == 'delete') onDelete();
                   },
                   itemBuilder: (_) => [
+                    if (meta.category == 'signature')
+                      const PopupMenuItem(
+                        value: 'view',
+                        child: Row(
+                          children: [
+                            Icon(Icons.visibility_rounded, size: 18),
+                            SizedBox(width: 10),
+                            Text('View Signature'),
+                          ],
+                        ),
+                      ),
                     const PopupMenuItem(
                       value: 'open',
                       child: Row(
                         children: [
                           Icon(Icons.open_in_new_rounded, size: 18),
                           SizedBox(width: 10),
-                          Text('Open'),
+                          Text('Open External'),
                         ],
                       ),
                     ),

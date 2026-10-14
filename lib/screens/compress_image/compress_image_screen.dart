@@ -112,14 +112,7 @@ class _CompressImageScreenState extends State<CompressImageScreen> {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceXs),
-              Text(
-                'Reduce image file size while maintaining visual quality.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
+              const SizedBox(height: AppTheme.spaceMd),
 
               // ── Upload Area ─────────────────────────────────────
               UploadArea(
@@ -191,110 +184,112 @@ class _CompressImageScreenState extends State<CompressImageScreen> {
                     : null,
               ),
 
-              const SizedBox(height: AppTheme.spaceLg),
+              const SizedBox(height: AppTheme.spaceXs),
 
               // ── Mode Switcher ──────────────────────────────────
               Container(
+
                 width: double.infinity,
+                height: 48,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _compressModeIndex = 0),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 100),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _compressModeIndex == 0
-                                ? Theme.of(context).colorScheme.surface
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _compressModeIndex == 0
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(
-                              'By Target Size (KB)',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: _compressModeIndex == 0
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: _compressModeIndex == 0
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                              ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = constraints.maxWidth / 2;
+                    return Stack(
+                      children: [
+                        // Sliding indicator pill (no blinking, smooth slide)
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeInOutCubic,
+                          left: _compressModeIndex == 0 ? 0 : itemWidth,
+                          top: 0,
+                          bottom: 0,
+                          width: itemWidth,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.06),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _compressModeIndex = 1),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 100),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: _compressModeIndex == 1
-                                ? Theme.of(context).colorScheme.surface
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: _compressModeIndex == 1
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                        // Tab labels
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  if (_compressModeIndex != 0) {
+                                    setState(() => _compressModeIndex = 0);
+                                  }
+                                },
+                                child: Center(
+                                  child: Text(
+                                    'By Target Size (KB)',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      fontWeight: _compressModeIndex == 0
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: _compressModeIndex == 0
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
                                     ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(
-                              'By Quality (%)',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14,
-                                fontWeight: _compressModeIndex == 1
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: _compressModeIndex == 1
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            Expanded(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  if (_compressModeIndex != 1) {
+                                    setState(() => _compressModeIndex = 1);
+                                  }
+                                },
+                                child: Center(
+                                  child: Text(
+                                    'By Quality (%)',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      fontWeight: _compressModeIndex == 1
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: _compressModeIndex == 1
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
 
-              const SizedBox(height: AppTheme.spaceLg),
 
+              // const SizedBox(height: AppTheme.spaceMd),
               // ── Compress Controls ───────────────────────────────
               if (_compressModeIndex == 0) ...[
                 PremiumCard(
@@ -310,7 +305,7 @@ class _CompressImageScreenState extends State<CompressImageScreen> {
                       ),
                       const SizedBox(height: AppTheme.spaceSm),
                       Container(
-                        height: 64,
+                        height: 50,
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
@@ -327,7 +322,7 @@ class _CompressImageScreenState extends State<CompressImageScreen> {
                                 keyboardType: TextInputType.number,
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  fontSize: 28,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: Theme.of(
                                     context,

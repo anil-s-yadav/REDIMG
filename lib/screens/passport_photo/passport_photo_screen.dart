@@ -118,7 +118,7 @@ class _PassportPhotoScreenState extends State<PassportPhotoScreen> {
               const SizedBox(height: AppTheme.spaceXs),
               Text(
                 'One-click optimization for standard document requirements.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -213,16 +213,15 @@ class _PassportPhotoScreenState extends State<PassportPhotoScreen> {
                 ),
               ),
 
-              if (_selectedImage == null) ...[
-                const SizedBox(height: AppTheme.spaceMd),
-                Center(
-                  child: OutlinedButton(
-                    onPressed: _pickImage,
-                    child: const Text('Browse Files'),
-                  ),
-                ),
-              ],
-
+              // if (_selectedImage == null) ...[
+              //   const SizedBox(height: AppTheme.spaceMd),
+              //   Center(
+              //     child: OutlinedButton(
+              //       onPressed: _pickImage,
+              //       child: const Text('Browse Files'),
+              //     ),
+              //   ),
+              // ],
               const SizedBox(height: AppTheme.spaceLg),
 
               // ── Automated Settings ──────────────────────────────

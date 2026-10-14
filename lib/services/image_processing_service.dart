@@ -419,4 +419,151 @@ class ImageProcessingService {
 
   /// Get file size in MB.
   static double fileSizeMB(int bytes) => bytes / (1024 * 1024);
+
+  static final Map<String, Uint8List> _trimmedBytesCache = {};
+  static final Map<String, File> _trimmedFileCache = {};
+
+  /// Synchronously returns cached trimmed bytes if available.
+  static Uint8List? getCachedTrimmedBytes(String path) =>
+      _trimmedBytesCache[path];
+
+  /// Trims transparent (or pure white) empty margins around signature strokes.
+  /// Returns cropped PNG bytes with an optional [padding] (default 8px).
+  static Future<Uint8List> trimTransparentMargins({
+    required Uint8List bytes,
+    int padding = 8,
+  }) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final originalImage = frame.image;
+      final width = originalImage.width;
+      final height = originalImage.height;
+
+      final byteData = await originalImage.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
+      if (byteData == null) return bytes;
+
+      final rawBytes = byteData.buffer.asUint8List();
+
+      int minX = width;
+      int maxX = -1;
+      int minY = height;
+      int maxY = -1;
+
+      for (int y = 0; y < height; y++) {
+        final rowOffset = y * width * 4;
+        for (int x = 0; x < width; x++) {
+          final offset = rowOffset + x * 4;
+          final r = rawBytes[offset];
+          final g = rawBytes[offset + 1];
+          final b = rawBytes[offset + 2];
+          final a = rawBytes[offset + 3];
+
+          // Ink detection:
+          // Must have alpha > 20 and not be pure white background (> 245 on all RGB channels)
+          if (a > 20 && (r < 245 || g < 245 || b < 245)) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      // No ink strokes detected
+      if (maxX < minX || maxY < minY) {
+        return bytes;
+      }
+
+      final left = (minX - padding).clamp(0, width - 1);
+      final top = (minY - padding).clamp(0, height - 1);
+      final right = (maxX + padding + 1).clamp(1, width);
+      final bottom = (maxY + padding + 1).clamp(1, height);
+
+      final cropW = right - left;
+      final cropH = bottom - top;
+
+      if (cropW >= width - 2 && cropH >= height - 2 && left <= 1 && top <= 1) {
+        return bytes;
+      }
+
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+
+      canvas.drawImageRect(
+        originalImage,
+        ui.Rect.fromLTWH(
+          left.toDouble(),
+          top.toDouble(),
+          cropW.toDouble(),
+          cropH.toDouble(),
+        ),
+        ui.Rect.fromLTWH(0, 0, cropW.toDouble(), cropH.toDouble()),
+        ui.Paint(),
+      );
+
+      final picture = recorder.endRecording();
+      final cropped = await picture.toImage(cropW, cropH);
+      final pngData = await cropped.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      return pngData?.buffer.asUint8List() ?? bytes;
+    } catch (e) {
+      debugPrint('Error trimming signature: $e');
+      return bytes;
+    }
+  }
+
+  /// Get trimmed bytes of a signature file (cached in memory).
+  static Future<Uint8List> getTrimmedSignatureBytes(
+    File inputFile, {
+    int padding = 8,
+  }) async {
+    final cached = _trimmedBytesCache[inputFile.path];
+    if (cached != null) return cached;
+
+    if (!await inputFile.exists()) {
+      return Uint8List(0);
+    }
+
+    final rawBytes = await inputFile.readAsBytes();
+    final trimmed = await trimTransparentMargins(
+      bytes: rawBytes,
+      padding: padding,
+    );
+    _trimmedBytesCache[inputFile.path] = trimmed;
+    return trimmed;
+  }
+
+  /// Get a File reference pointing to a trimmed version of the signature.
+  static Future<File> getTrimmedSignatureFile(
+    File inputFile, {
+    int padding = 8,
+  }) async {
+    final cached = _trimmedFileCache[inputFile.path];
+    if (cached != null && await cached.exists()) return cached;
+
+    if (!await inputFile.exists()) return inputFile;
+
+    final trimmedBytes = await getTrimmedSignatureBytes(
+      inputFile,
+      padding: padding,
+    );
+
+    final originalLength = await inputFile.length();
+    if (trimmedBytes.length == originalLength) {
+      _trimmedFileCache[inputFile.path] = inputFile;
+      return inputFile;
+    }
+
+    final tempDir = await getTemporaryDirectory();
+    final fileName = 'trimmed_${path.basename(inputFile.path)}';
+    final trimmedFile = File(path.join(tempDir.path, fileName));
+    await trimmedFile.writeAsBytes(trimmedBytes);
+    _trimmedFileCache[inputFile.path] = trimmedFile;
+    return trimmedFile;
+  }
 }
+

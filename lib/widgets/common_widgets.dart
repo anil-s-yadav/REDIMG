@@ -9,6 +9,7 @@ class PrimaryActionButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback? onPressed;
   final bool isLoading;
+  final double? height;
 
   const PrimaryActionButton({
     super.key,
@@ -16,6 +17,7 @@ class PrimaryActionButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.isLoading = false,
+    this.height,
   });
 
   @override
@@ -26,7 +28,7 @@ class PrimaryActionButton extends StatelessWidget {
         onTap: isLoading ? null : onPressed,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         child: Ink(
-          height: 56,
+          height: height ?? 56,
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),

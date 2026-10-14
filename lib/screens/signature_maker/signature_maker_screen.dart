@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:signature/signature.dart';
@@ -65,22 +64,27 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
       File? outputFile;
 
       if (_uploadedSignature != null) {
-        // Use uploaded signature
+        // Use uploaded signature (auto-trim transparent / white margins)
+        final trimmed = await ImageProcessingService.getTrimmedSignatureFile(
+          _uploadedSignature!,
+        );
         final targetKB = _sizeOptions[_selectedSizeIndex]['kb'] as int;
         if (targetKB > 0) {
           outputFile = await ImageProcessingService.resizeToTargetKB(
-            inputPath: _uploadedSignature!.path,
+            inputPath: trimmed.path,
             targetKB: targetKB,
             isPng: _outputFormat == OutputFormat.png,
           );
         } else {
-          outputFile = _uploadedSignature;
+          outputFile = trimmed;
         }
       } else if (_signatureController.isNotEmpty) {
-        // Export drawn signature
+        // Export drawn signature tightly cropped to strokes with small padding
+        final defW = _signatureController.defaultWidth;
+        final defH = _signatureController.defaultHeight;
         final signatureBytes = await _signatureController.toPngBytes(
-          height: 300,
-          width: 600,
+          width: defW != null ? defW + 24 : null,
+          height: defH != null ? defH + 24 : null,
         );
 
         if (signatureBytes != null) {
@@ -113,6 +117,16 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
 
       if (outputFile != null) {
         final fileLength = await outputFile.length();
+        int imgW = 0;
+        int imgH = 0;
+        try {
+          final decoded = await decodeImageFromList(
+            await outputFile.readAsBytes(),
+          );
+          imgW = decoded.width;
+          imgH = decoded.height;
+        } catch (_) {}
+
         if (mounted) {
           final fileSize = ImageProcessingService.formatFileSize(fileLength);
           context.push(
@@ -120,7 +134,7 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
             extra: {
               'filePath': outputFile.path,
               'fileSize': fileSize,
-              'dimensions': '600 × 300 px',
+              'dimensions': imgW > 0 ? '$imgW × $imgH px' : 'Auto',
               'format': 'PNG',
               'toolName': 'Signature Maker',
               'outputFormat': _outputFormat.name,
@@ -128,6 +142,7 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
           );
         }
       }
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

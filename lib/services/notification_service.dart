@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+
 
 /// Service for scheduling local push notifications.
 /// During closed testing: 4 notifications per day.
@@ -48,16 +46,6 @@ class NotificationService {
   /// Initialize the notification plugin. Call this once at app startup.
   Future<void> init() async {
     if (_initialized) return;
-
-    // Initialize timezone data
-    tz.initializeTimeZones();
-    try {
-      final timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (e) {
-      debugPrint('Timezone error, using UTC: $e');
-      // Fallback to UTC if timezone detection fails
-    }
 
     // Android initialization
     const androidSettings =
@@ -107,61 +95,18 @@ class NotificationService {
     return false;
   }
 
-  /// Schedule 4 daily notifications at fixed times.
-  /// Times: 9:00 AM, 1:00 PM, 5:00 PM, 8:00 PM
+  /// Schedule daily reminder notification without timezone dependency.
   Future<void> scheduleDailyNotifications() async {
     // Cancel any existing scheduled notifications first
     await _plugin.cancelAll();
 
-    const times = [
-      (hour: 9, minute: 0),  // 9:00 AM
-      (hour: 13, minute: 0), // 1:00 PM
-      (hour: 17, minute: 0), // 5:00 PM
-      (hour: 20, minute: 0), // 8:00 PM
-    ];
-
-    for (int i = 0; i < times.length; i++) {
-      final message = _messages[i % _messages.length];
-      await _scheduleDailyNotification(
-        id: i,
-        hour: times[i].hour,
-        minute: times[i].minute,
-        title: message['title']!,
-        body: message['body']!,
-      );
-    }
-
-    debugPrint('NotificationService: Scheduled 4 daily notifications');
-  }
-
-  Future<void> _scheduleDailyNotification({
-    required int id,
-    required int hour,
-    required int minute,
-    required String title,
-    required String body,
-  }) async {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
-
-    // If the time has already passed today, schedule for tomorrow
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
-    }
-
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduledDate,
-      NotificationDetails(
+    final message = _messages[0];
+    await _plugin.periodicallyShow(
+      0,
+      message['title']!,
+      message['body']!,
+      RepeatInterval.daily,
+      const NotificationDetails(
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
@@ -170,14 +115,14 @@ class NotificationService {
           priority: Priority.defaultPriority,
           icon: '@mipmap/ic_launcher',
         ),
-        iOS: const DarwinNotificationDetails(),
+        iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
     );
+
+    debugPrint('NotificationService: Scheduled daily notification');
   }
+
 
   void _onNotificationTapped(NotificationResponse response) {
     // App opens automatically when notification is tapped.
