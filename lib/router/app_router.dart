@@ -9,6 +9,7 @@ import '../screens/signature_maker/signature_maker_screen.dart';
 import '../screens/combine_tool/combine_tool_screen.dart';
 import '../screens/compress_image/compress_image_screen.dart';
 import '../screens/image_to_pdf/image_to_pdf_screen.dart';
+import '../screens/privacy_policy/privacy_policy_screen.dart';
 import '../screens/result/result_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/shell/app_shell.dart';
@@ -108,6 +109,14 @@ final GoRouter appRouter = GoRouter(
           transitionsBuilder: _slideTransition,
         );
       },
+    ),
+    GoRoute(
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      pageBuilder: (context, state) => CustomTransitionPage(
+        child: const PrivacyPolicyScreen(),
+        transitionsBuilder: _slideTransition,
+      ),
     ),
   ],
 );

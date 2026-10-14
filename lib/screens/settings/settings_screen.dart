@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -26,14 +28,14 @@ class SettingsScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceXs),
-              Text(
-                'Customize your experience.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
+              const SizedBox(height: AppTheme.spaceMd),
+              // Text(
+              //   'Customize your experience.',
+              //   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              //     color: Theme.of(context).colorScheme.onSurfaceVariant,
+              //   ),
+              // ),
+              // const SizedBox(height: AppTheme.spaceLg),
 
               // ── Appearance ──────────────────────────────────────
               PremiumCard(
@@ -41,7 +43,6 @@ class SettingsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SectionLabel('Appearance'),
-                    const SizedBox(height: AppTheme.spaceMd),
                     _SettingTile(
                       icon: Icons.dark_mode_rounded,
                       title: 'Dark Mode',
@@ -57,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceMd),
+              const SizedBox(height: AppTheme.radiusSm),
 
               // ── About ───────────────────────────────────────────
               PremiumCard(
@@ -65,7 +66,6 @@ class SettingsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SectionLabel('About'),
-                    const SizedBox(height: AppTheme.spaceMd),
                     _SettingTile(
                       icon: Icons.info_outline_rounded,
                       title: 'App Version',
@@ -76,12 +76,206 @@ class SettingsScreen extends StatelessWidget {
                       icon: Icons.description_rounded,
                       title: 'Privacy Policy',
                       subtitle: 'Read our privacy policy',
-                      onTap: () {},
+                      onTap: () => context.push('/privacy-policy'),
+                    ),
+                    const Divider(height: 1),
+                    const SizedBox(height: AppTheme.spaceSm),
+
+                    // ── Colorful "Our Other Apps" Tab ───────────────
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [
+                                  const Color(
+                                    0xFF3B1D66,
+                                  ).withValues(alpha: 0.5),
+                                  const Color(
+                                    0xFF1E1B4B,
+                                  ).withValues(alpha: 0.5),
+                                ]
+                              : [
+                                  const Color(0xFFF5F3FF),
+                                  const Color(0xFFEFF6FF),
+                                ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(
+                            0xFF8B5CF6,
+                          ).withValues(alpha: isDark ? 0.45 : 0.25),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF8B5CF6,
+                            ).withValues(alpha: isDark ? 0.2 : 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () async {
+                            final uri = Uri.parse(
+                              'https://play.google.com/store/apps/dev?id=8832237281097064209',
+                            );
+                            final marketUri = Uri.parse(
+                              'market://dev?id=8832237281097064209',
+                            );
+                            if (await canLaunchUrl(marketUri)) {
+                              await launchUrl(marketUri);
+                            } else {
+                              await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                // Vivid 3-stop gradient icon box
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF6366F1),
+                                        Color(0xFFD946EF),
+                                        Color(0xFFF43F5E),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFFD946EF,
+                                        ).withValues(alpha: 0.4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.grid_view_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Our Other Apps',
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              gradient: const LinearGradient(
+                                                colors: [
+                                                  Color(0xFFF59E0B),
+                                                  Color(0xFFEF4444),
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'PLAY STORE',
+                                              style: TextStyle(
+                                                fontFamily: 'Inter',
+                                                fontSize: 8.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                                letterSpacing: 0.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Explore more tools by our developer',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.outline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF8B5CF6),
+                                        Color(0xFF6366F1),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF8B5CF6,
+                                        ).withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 15,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceMd),
+              const SizedBox(height: AppTheme.radiusXl),
 
               // ── Rate Us (Premium Banner) ────────────────────────
               Container(
@@ -184,7 +378,23 @@ class SettingsScreen extends StatelessWidget {
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () {},
+                              onTap: () async {
+                                final uri = Uri.parse(
+                                  'https://play.google.com/store/apps/details?id=com.redpdf.redimg.resize_image_to_kb',
+                                );
+                                // Try market:// intent first (opens Play Store app directly)
+                                final marketUri = Uri.parse(
+                                  'market://details?id=com.redpdf.redimg.resize_image_to_kb',
+                                );
+                                if (await canLaunchUrl(marketUri)) {
+                                  await launchUrl(marketUri);
+                                } else {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 width: double.infinity,
@@ -231,246 +441,10 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: AppTheme.spaceMd),
-
-              // ── Storage ─────────────────────────────────────────
-              PremiumCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SectionLabel('Storage'),
-                    const SizedBox(height: AppTheme.spaceMd),
-                    _SettingTile(
-                      icon: Icons.cleaning_services_rounded,
-                      title: 'Clear Cache',
-                      subtitle: 'Free up temporary storage space',
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cache cleared successfully'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
-
-              // ── Our Other Apps ───────────────────────────────────
-              const SectionLabel('Our Other Apps'),
-              const SizedBox(height: AppTheme.spaceSm),
-              Text(
-                'Explore more productivity tools from us.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-
-              SizedBox(
-                height: 195,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
-                  children: const [
-                    _OtherAppCard(
-                      name: 'RdPdf Tools',
-                      tagline: 'Merge, split & edit PDFs',
-                      icon: Icons.picture_as_pdf_rounded,
-                      gradientColors: [Color(0xFFEF4444), Color(0xFFF97316)],
-                      rating: '4.8',
-                      downloads: '100K+',
-                    ),
-                    SizedBox(width: 12),
-                    _OtherAppCard(
-                      name: 'DocScanner Pro',
-                      tagline: 'Scan docs with your camera',
-                      icon: Icons.document_scanner_rounded,
-                      gradientColors: [Color(0xFF8B5CF6), Color(0xFFD946EF)],
-                      rating: '4.6',
-                      downloads: '50K+',
-                    ),
-                    SizedBox(width: 12),
-                    _OtherAppCard(
-                      name: 'File Converter',
-                      tagline: 'Convert any file format',
-                      icon: Icons.swap_horiz_rounded,
-                      gradientColors: [Color(0xFF059669), Color(0xFF34D399)],
-                      rating: '4.5',
-                      downloads: '30K+',
-                    ),
-                    SizedBox(width: 12),
-                    _OtherAppCard(
-                      name: 'Photo Editor',
-                      tagline: 'Quick edits & filters',
-                      icon: Icons.photo_filter_rounded,
-                      gradientColors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
-                      rating: '4.7',
-                      downloads: '80K+',
-                    ),
-                  ],
-                ),
-              ),
-
               const SizedBox(height: AppTheme.spaceXl),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Card for showcasing other apps in a horizontal scrollable row.
-class _OtherAppCard extends StatelessWidget {
-  final String name;
-  final String tagline;
-  final IconData icon;
-  final List<Color> gradientColors;
-  final String rating;
-  final String downloads;
-
-  const _OtherAppCard({
-    required this.name,
-    required this.tagline,
-    required this.icon,
-    required this.gradientColors,
-    required this.rating,
-    required this.downloads,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 160,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color:
-            Theme.of(context).cardTheme.color ??
-            Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withValues(alpha: 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Theme.of(context).shadowColor.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: gradientColors.first.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon with gradient background
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: gradientColors.first.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(height: 12),
-
-          // App name
-          Text(
-            name,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-
-          // Tagline
-          Text(
-            tagline,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: FontWeight.w300,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const Spacer(),
-
-          // Rating + Downloads row
-          Row(
-            children: [
-              Icon(
-                Icons.star_rounded,
-                size: 13,
-                color: const Color(0xFFFBBF24),
-              ),
-              const SizedBox(width: 2),
-              Text(
-                rating,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                downloads,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w400,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
-              const Spacer(),
-              // Get button
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: gradientColors.first.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Get',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: gradientColors.first,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

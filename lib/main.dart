@@ -5,8 +5,9 @@ import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/theme_provider.dart';
 import 'router/app_router.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -18,12 +19,29 @@ void main() {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+
+  // Initialize notifications (non-blocking, crash-safe)
+  _initNotifications();
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeModeProvider(),
       child: const RdPdfImageToolsApp(),
     ),
   );
+}
+
+/// Initialize notification service in background.
+/// Wrapped in try-catch to prevent app crashes.
+void _initNotifications() async {
+  try {
+    final notificationService = NotificationService.instance;
+    await notificationService.init();
+    await notificationService.requestPermission();
+    await notificationService.scheduleDailyNotifications();
+  } catch (e) {
+    debugPrint('Notification init error (non-fatal): $e');
+  }
 }
 
 class RdPdfImageToolsApp extends StatelessWidget {

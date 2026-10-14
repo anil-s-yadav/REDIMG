@@ -135,20 +135,11 @@ class FileService {
     }
   }
 
-  /// Request WRITE_EXTERNAL_STORAGE for Android 9 and below.
-  /// On Android 10+, this is a no-op since MediaStore needs no permissions.
+  /// Storage permissions are not needed because:
+  /// - Photo picking uses system Photo Picker (no permissions)
+  /// - File saving uses MediaStore API on Android 10+ (no permissions)
   static Future<bool> _ensureStoragePermission() async {
-    if (!Platform.isAndroid) return true;
-
-    final status = await Permission.storage.status;
-    if (status.isGranted) return true;
-
-    // On Android 10+, permission.storage may be permanently denied
-    // because it's not applicable. MediaStore handles saving without it.
-    if (status.isPermanentlyDenied) return false;
-
-    final result = await Permission.storage.request();
-    return result.isGranted;
+    return true;
   }
 
   /// Copy a saved file to the public Downloads/RedImage/ folder so it
