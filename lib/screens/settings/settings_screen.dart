@@ -10,9 +10,9 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   static const String _privacyPolicyUrl =
-      'https://anil-s-yadav.github.io/REDIMG/privacy-policy.html';
+      'https://anil-s-yadav.github.io/REDIMG-Privacy_Policy/privacy-policy.html';
   static const String _termsUrl =
-      'https://anil-s-yadav.github.io/REDIMG/terms.html';
+      'https://anil-s-yadav.github.io/REDIMG-Privacy_Policy/terms.html';
 
   Future<void> _openUrl(BuildContext context, String urlString) async {
     final uri = Uri.parse(urlString);
