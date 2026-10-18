@@ -39,6 +39,7 @@ void _initNotifications() async {
     await notificationService.init();
     await notificationService.requestPermission();
     await notificationService.scheduleDailyNotifications();
+    await notificationService.checkLaunchNotification();
   } catch (e) {
     debugPrint('Notification init error (non-fatal): $e');
   }

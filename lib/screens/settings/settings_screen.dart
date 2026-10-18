@@ -5,14 +5,36 @@ import '../../providers/theme_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
+import '../../services/notification_service.dart';
+
 /// Settings screen.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   static const String _privacyPolicyUrl =
       'https://anil-s-yadav.github.io/REDIMG-Privacy_Policy/privacy-policy.html';
   static const String _termsUrl =
       'https://anil-s-yadav.github.io/REDIMG-Privacy_Policy/terms.html';
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationState();
+  }
+
+  Future<void> _loadNotificationState() async {
+    final enabled = await NotificationService.instance.isEnabled();
+    if (mounted) {
+      setState(() => _notificationsEnabled = enabled);
+    }
+  }
 
   Future<void> _openUrl(BuildContext context, String urlString) async {
     final uri = Uri.parse(urlString);
@@ -55,12 +77,12 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppTheme.spaceMd),
 
-              // ── Appearance ──────────────────────────────────────
+              // ── Preferences ─────────────────────────────────────
               PremiumCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionLabel('Appearance'),
+                    const SectionLabel('Preferences'),
                     _SettingTile(
                       icon: Icons.dark_mode_rounded,
                       title: 'Dark Mode',
@@ -71,6 +93,22 @@ class SettingsScreen extends StatelessWidget {
                           context,
                         ).colorScheme.primaryContainer,
                         onChanged: (_) => themeProvider.toggleTheme(),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    _SettingTile(
+                      icon: Icons.notifications_active_outlined,
+                      title: 'Daily Reminders',
+                      subtitle: 'Helpful tips & shortcuts 4 times a day',
+                      trailing: Switch.adaptive(
+                        value: _notificationsEnabled,
+                        activeThumbColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        onChanged: (val) async {
+                          setState(() => _notificationsEnabled = val);
+                          await NotificationService.instance.setEnabled(val);
+                        },
                       ),
                     ),
                   ],
@@ -87,7 +125,7 @@ class SettingsScreen extends StatelessWidget {
                     _SettingTile(
                       icon: Icons.info_outline_rounded,
                       title: 'App Version',
-                      subtitle: '1.0.0',
+                      subtitle: '1.0.1',
                     ),
                     const Divider(height: 1),
                     _SettingTile(
@@ -99,7 +137,8 @@ class SettingsScreen extends StatelessWidget {
                         size: 18,
                         color: Theme.of(context).colorScheme.outline,
                       ),
-                      onTap: () => _openUrl(context, _privacyPolicyUrl),
+                      onTap: () =>
+                          _openUrl(context, SettingsScreen._privacyPolicyUrl),
                     ),
                     const Divider(height: 1),
                     _SettingTile(
@@ -111,7 +150,7 @@ class SettingsScreen extends StatelessWidget {
                         size: 18,
                         color: Theme.of(context).colorScheme.outline,
                       ),
-                      onTap: () => _openUrl(context, _termsUrl),
+                      onTap: () => _openUrl(context, SettingsScreen._termsUrl),
                     ),
                     const Divider(height: 1),
                     const SizedBox(height: AppTheme.spaceSm),
