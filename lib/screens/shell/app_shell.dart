@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:in_app_update/in_app_update.dart';
+import '../../services/notification_service.dart';
 
 /// App shell providing the persistent bottom navigation bar.
 class AppShell extends StatefulWidget {
@@ -17,6 +18,24 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _checkForUpdate();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initNotifications();
+    });
+  }
+
+  Future<void> _initNotifications() async {
+    try {
+      final notif = NotificationService.instance;
+      final enabled = await notif.isEnabled();
+      if (enabled) {
+        // Safe to request on Android 13+ now that Flutter Activity is mounted and active
+        await notif.requestPermission();
+        await notif.scheduleDailyNotifications();
+      }
+      await notif.checkLaunchNotification();
+    } catch (e) {
+      debugPrint('AppShell: Notification setup error: $e');
+    }
   }
 
   Future<void> _checkForUpdate() async {
@@ -58,7 +77,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final idx = _currentIndex(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: widget.child,
@@ -158,10 +176,10 @@ class _NavItem extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
                 color: isActive
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             ),
           ],

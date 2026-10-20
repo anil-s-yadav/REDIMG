@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
 import '../../services/notification_service.dart';
+import '../../services/rate_service.dart';
 
 /// Settings screen.
 class SettingsScreen extends StatefulWidget {
@@ -151,6 +152,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: Theme.of(context).colorScheme.outline,
                       ),
                       onTap: () => _openUrl(context, SettingsScreen._termsUrl),
+                    ),
+                    const Divider(height: 1),
+                    _SettingTile(
+                      icon: Icons.star_rate_rounded,
+                      title: 'Rate App',
+                      subtitle: 'Love REDIMG? Leave a review on Google Play',
+                      trailing: Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      onTap: () => RateService.openPlayStore(),
                     ),
                     const Divider(height: 1),
                     const SizedBox(height: AppTheme.spaceSm),
@@ -474,7 +487,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 width: double.infinity,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainer,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(

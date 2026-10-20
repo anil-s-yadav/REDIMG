@@ -1,16 +1,40 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import '../router/app_router.dart';
+
+/// Specification for a daily scheduled notification slot.
+class DailyNotificationSlot {
+  final int id;
+  final int hour;
+  final int minute;
+  final String title;
+  final String body;
+  final String route;
+
+  const DailyNotificationSlot({
+    required this.id,
+    required this.hour,
+    required this.minute,
+    required this.title,
+    required this.body,
+    required this.route,
+  });
+}
 
 /// Service for scheduling local push notifications.
 ///
-/// Configured for 4 times a day (every 6 hours) using inexact alarms.
-/// - Does NOT use exact alarms (no SCHEDULE_EXACT_ALARM permission required).
-/// - Highly optimized: prevents timer reset on every app launch by checking pending requests.
-/// - Rotates between 6 core tools and helpful tips.
-/// - Fully user-configurable via settings.
+/// Features:
+/// - Fires 4 times a day at optimal waking hours (10:00 AM, 02:00 PM, 06:00 PM, 09:00 PM).
+/// - Inexact schedule with [AndroidScheduleMode.inexactAllowWhileIdle].
+/// - 100% compliant with Google Play Store policies (NO SCHEDULE_EXACT_ALARM needed).
+/// - Uses [matchDateTimeComponents: DateTimeComponents.time] for automatic daily repetition.
+/// - Restored after device reboot via ScheduledNotificationBootReceiver.
+/// - High importance notification channel for heads-up alert visibility.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -20,57 +44,91 @@ class NotificationService {
 
   bool _initialized = false;
 
-  /// Channel ID for the app's reminder notifications.
-  static const String _channelId = 'redimg_reminders';
+  /// Upgraded channel ID with high importance and priority.
+  static const String _channelId = 'redimg_daily_reminders_v2';
   static const String _channelName = 'REDIMG Reminders & Tips';
   static const String _channelDescription =
       'Helpful reminders and tips to use REDIMG image and PDF tools';
 
-  static const int _notificationId = 1001;
-
-  /// Notification messages to rotate through 4 times a day.
-  static const List<Map<String, String>> _messages = [
-    {
-      'title': '📐 Need an exact image size?',
-      'body': 'Resize photos to 20KB, 50KB, 100KB or custom resolution with REDIMG.',
-      'route': '/resize-image',
-    },
-    {
-      'title': '🪪 Create Passport Photo in seconds',
-      'body': 'Generate standard photos for Aadhar, PAN, Visa & official exam forms.',
-      'route': '/passport-photo',
-    },
-    {
-      'title': '✍️ Draw & Save Your Signature',
-      'body': 'Create clean transparent signatures ready for digital document signing.',
-      'route': '/signature-maker',
-    },
-    {
-      'title': '🗜️ Compress Heavy Photos',
-      'body': 'Reduce photo file size by up to 90% without losing visual clarity.',
-      'route': '/compress-image',
-    },
-    {
-      'title': '📑 Combine Photo + Signature',
-      'body': 'Merge your photo and signature together on one page for recruitment portals.',
-      'route': '/combine-tool',
-    },
-    {
-      'title': '📄 Convert Images to PDF',
-      'body': 'Turn single or multiple images into high-quality PDFs with one tap.',
-      'route': '/image-to-pdf',
-    },
+  /// 4 daily notification slots at fixed clock hours.
+  static const List<DailyNotificationSlot> _dailySlots = [
+    DailyNotificationSlot(
+      id: 101,
+      hour: 10,
+      minute: 0,
+      title: '🪪 Create Passport Photo in Seconds',
+      body: 'Standard photo sizes for exam forms, Aadhar, PAN & official IDs.',
+      route: '/passport-photo',
+    ),
+    DailyNotificationSlot(
+      id: 102,
+      hour: 14,
+      minute: 0,
+      title: '📐 Resize Photos to Exact KB',
+      body: 'Quickly resize photos to 20KB, 50KB, 100KB or custom resolution.',
+      route: '/resize-image',
+    ),
+    DailyNotificationSlot(
+      id: 103,
+      hour: 18,
+      minute: 0,
+      title: '🗜️ Compress Heavy Photos',
+      body: 'Reduce image file size by up to 90% without losing visual clarity.',
+      route: '/compress-image',
+    ),
+    DailyNotificationSlot(
+      id: 104,
+      hour: 21,
+      minute: 0,
+      title: '✍️ Draw & Save Your Signature',
+      body: 'Create clean transparent signatures ready for online document signing.',
+      route: '/signature-maker',
+    ),
   ];
 
-  /// Initialize the notification plugin. Call this once at app startup.
+  static const NotificationDetails _notificationDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
+  );
+
+  /// Initialize timezone and notification plugin. Safe to call multiple times.
   Future<void> init() async {
     if (_initialized) return;
 
-    // Android initialization
+    // 1. Initialize Timezones
+    tz.initializeTimeZones();
+    try {
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      final timeZoneName = tzInfo.identifier;
+      if (tz.timeZoneDatabase.locations.containsKey(timeZoneName)) {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+        debugPrint('NotificationService: Local timezone set to $timeZoneName');
+      } else {
+        debugPrint(
+          'NotificationService: Timezone $timeZoneName not in DB, fallback to local',
+        );
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Timezone initialization error: $e');
+    }
+
+    // 2. Platform initialization settings
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS initialization
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -87,22 +145,43 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    // 3. Android notification channel creation
+    if (Platform.isAndroid) {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        try {
+          await androidPlugin.deleteNotificationChannel('redimg_reminders');
+        } catch (_) {}
+
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelId,
+            _channelName,
+            description: _channelDescription,
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+      }
+    }
+
     _initialized = true;
   }
 
   /// Request notification permission (Android 13+ / iOS).
   Future<bool> requestPermission() async {
+    await init();
     if (Platform.isAndroid) {
-      final androidPlugin =
-          _plugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       final granted =
           await androidPlugin?.requestNotificationsPermission() ?? false;
       return granted;
     } else if (Platform.isIOS) {
-      final iosPlugin =
-          _plugin.resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
       final granted = await iosPlugin?.requestPermissions(
             alert: true,
             badge: true,
@@ -111,7 +190,18 @@ class NotificationService {
           false;
       return granted;
     }
-    return false;
+    return true;
+  }
+
+  /// Check whether notification permission is granted at the OS level.
+  Future<bool> areNotificationsEnabled() async {
+    await init();
+    if (Platform.isAndroid) {
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      return await androidPlugin?.areNotificationsEnabled() ?? false;
+    }
+    return true;
   }
 
   /// Check if user has notifications enabled in preferences.
@@ -132,73 +222,122 @@ class NotificationService {
     }
   }
 
-  /// Schedule 4 times a day notifications (every 6 hours).
+  /// Get count of pending scheduled notifications.
+  Future<int> getPendingNotificationCount() async {
+    try {
+      final pending = await _plugin.pendingNotificationRequests();
+      return pending.length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Immediately triggers a test notification so the user can verify it works.
+  Future<bool> showTestNotification() async {
+    try {
+      await init();
+      final systemEnabled = await areNotificationsEnabled();
+      if (!systemEnabled) {
+        final granted = await requestPermission();
+        if (!granted) return false;
+      }
+
+      await _plugin.show(
+        999,
+        '🔔 REDIMG: Notifications are working!',
+        'Daily reminders are active. You will receive 4 helpful tips daily.',
+        _notificationDetails,
+        payload: '/home',
+      );
+      return true;
+    } catch (e) {
+      debugPrint('NotificationService: showTestNotification error: $e');
+      return false;
+    }
+  }
+
+  /// Schedule 4 notifications per day at fixed waking hours.
   ///
-  /// Optimization:
-  /// - Uses [AndroidScheduleMode.inexactAllowWhileIdle] (no exact alarm permission needed).
-  /// - Avoids resetting the 6-hour alarm countdown on every app launch if one is already pending.
-  /// - Rotates between 6 diverse tools and tips.
+  /// Uses [AndroidScheduleMode.inexactAllowWhileIdle] which:
+  /// - Does NOT require SCHEDULE_EXACT_ALARM permission.
+  /// - Is fully compliant with Google Play Store policies.
+  /// - Repeats daily at fixed times (10:00 AM, 02:00 PM, 06:00 PM, 09:00 PM).
   Future<void> scheduleDailyNotifications({bool force = false}) async {
     try {
+      await init();
+
       final isNotificationEnabled = await isEnabled();
       if (!isNotificationEnabled) {
         await cancelAll();
         return;
       }
 
-      // Optimization: Do NOT reschedule if an inexact repeating alarm is already pending.
-      // This prevents the 6-hour timer from resetting to zero every time the user launches the app!
+      final systemAllowed = await areNotificationsEnabled();
+      if (!systemAllowed) {
+        debugPrint(
+          'NotificationService: System notifications are not permitted. Skipping schedule.',
+        );
+        return;
+      }
+
+      // If already scheduled and not forced, verify slots are present
       if (!force) {
         final pending = await _plugin.pendingNotificationRequests();
-        if (pending.isNotEmpty) {
+        final pendingIds = pending.map((e) => e.id).toSet();
+        final allSlotsActive =
+            _dailySlots.every((slot) => pendingIds.contains(slot.id));
+        if (allSlotsActive) {
           debugPrint(
-            'NotificationService: Inexact notification already active (${pending.length} pending), skipping timer reset.',
+            'NotificationService: All 4 daily notification slots are already scheduled and active.',
           );
           return;
         }
       }
 
-      // Cancel any old scheduled alarms
-      await _plugin.cancelAll();
+      // Schedule each slot
+      for (final slot in _dailySlots) {
+        // Cancel existing slot before rescheduling to avoid duplicates
+        await _plugin.cancel(slot.id);
 
-      // Rotate through messages
-      final prefs = await SharedPreferences.getInstance();
-      final lastIndex = prefs.getInt('last_notification_index') ?? -1;
-      final nextIndex = (lastIndex + 1) % _messages.length;
-      await prefs.setInt('last_notification_index', nextIndex);
+        final scheduledDate = _nextInstanceOfTime(slot.hour, slot.minute);
 
-      final message = _messages[nextIndex];
-      final title = message['title']!;
-      final body = message['body']!;
-      final route = message['route'];
+        await _plugin.zonedSchedule(
+          slot.id,
+          slot.title,
+          slot.body,
+          scheduledDate,
+          _notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.time,
+          payload: slot.route,
+        );
 
-      // Schedule for every 6 hours = 4 times a day
-      await _plugin.periodicallyShowWithDuration(
-        _notificationId,
-        title,
-        body,
-        const Duration(hours: 6),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
-            icon: '@mipmap/ic_launcher',
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        payload: route,
-      );
-
-      debugPrint(
-        'NotificationService: Scheduled inexact periodic notification (every 6 hours, 4x daily): "$title"',
-      );
+        debugPrint(
+          'NotificationService: Scheduled slot [${slot.id}] "${slot.title}" at $scheduledDate',
+        );
+      }
     } catch (e) {
-      debugPrint('NotificationService: Schedule error (non-fatal): $e');
+      debugPrint('NotificationService: Schedule error: $e');
     }
+  }
+
+  /// Calculate the next instance of a specific hour:minute in the local timezone.
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (scheduledDate.isBefore(now) || scheduledDate.isAtSameMomentAs(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
   }
 
   /// Cancel all scheduled and active notifications.
@@ -207,7 +346,7 @@ class NotificationService {
     debugPrint('NotificationService: All notifications canceled');
   }
 
-  /// Handle notification tap when app is opened from notification.
+  /// Handle notification tap when app is opened from a notification.
   Future<void> checkLaunchNotification() async {
     try {
       final details = await _plugin.getNotificationAppLaunchDetails();
