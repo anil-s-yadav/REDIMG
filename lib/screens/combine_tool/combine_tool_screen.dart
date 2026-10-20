@@ -110,7 +110,6 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
     );
   }
 
-
   void _resetPositions() {
     setState(() {
       _photoState.position = const Offset(10, 10);
@@ -845,52 +844,6 @@ class _SignatureSection extends StatelessWidget {
               subtitle: 'Choose from Gallery or saved signatures',
               hasFile: false,
             ),
-            if (savedSignatures.isNotEmpty) ...[
-              const SizedBox(height: AppTheme.spaceMd),
-              Row(
-                children: [
-                  Text(
-                    'Quick Select Saved Signature:',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: onOpenPickerSheet,
-                    child: Text(
-                      'View all',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.primaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 68,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: savedSignatures.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final item = savedSignatures[index];
-                    return _QuickSavedSignatureCard(
-                      meta: item,
-                      onTap: () => onSelectSavedSignature(item),
-                    );
-                  },
-                ),
-              ),
-
-            ],
           ] else ...[
             Stack(
               children: [
@@ -912,7 +865,6 @@ class _SignatureSection extends StatelessWidget {
                     ),
                   ),
                 ),
-
 
                 Positioned(
                   top: 8,
@@ -1022,4 +974,3 @@ class _QuickSavedSignatureCard extends StatelessWidget {
     );
   }
 }
-
