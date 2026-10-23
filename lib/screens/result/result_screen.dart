@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/file_service.dart';
+import '../../services/rate_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -89,6 +90,8 @@ class _ResultScreenState extends State<ResultScreen> {
           _saveFailed = false;
           _savedPath = saved.path;
         });
+        // Prompt user to rate the app after any successful action
+        RateService.showRatePromptIfEligible(context);
       }
     } catch (e) {
       if (mounted) {
@@ -127,6 +130,7 @@ class _ResultScreenState extends State<ResultScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+        RateService.showRatePromptIfEligible(context);
       }
     } catch (e) {
       if (mounted) {

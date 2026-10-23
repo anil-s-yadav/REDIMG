@@ -20,8 +20,12 @@ void main() async {
     ),
   );
 
-  // Initialize notifications (non-blocking, crash-safe)
-  _initNotifications();
+  // Initialize notifications core (timezone and notification plugin)
+  try {
+    await NotificationService.instance.init();
+  } catch (e) {
+    debugPrint('Notification init error in main: $e');
+  }
 
   runApp(
     ChangeNotifierProvider(
@@ -29,19 +33,6 @@ void main() async {
       child: const RdPdfImageToolsApp(),
     ),
   );
-}
-
-/// Initialize notification service in background.
-/// Wrapped in try-catch to prevent app crashes.
-void _initNotifications() async {
-  try {
-    final notificationService = NotificationService.instance;
-    await notificationService.init();
-    await notificationService.requestPermission();
-    await notificationService.scheduleDailyNotifications();
-  } catch (e) {
-    debugPrint('Notification init error (non-fatal): $e');
-  }
 }
 
 class RdPdfImageToolsApp extends StatelessWidget {

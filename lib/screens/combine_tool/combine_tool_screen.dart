@@ -110,7 +110,6 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
     );
   }
 
-
   void _resetPositions() {
     setState(() {
       _photoState.position = const Offset(10, 10);
@@ -845,52 +844,6 @@ class _SignatureSection extends StatelessWidget {
               subtitle: 'Choose from Gallery or saved signatures',
               hasFile: false,
             ),
-            if (savedSignatures.isNotEmpty) ...[
-              const SizedBox(height: AppTheme.spaceMd),
-              Row(
-                children: [
-                  Text(
-                    'Quick Select Saved Signature:',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: onOpenPickerSheet,
-                    child: Text(
-                      'View all',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.primaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 68,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: savedSignatures.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final item = savedSignatures[index];
-                    return _QuickSavedSignatureCard(
-                      meta: item,
-                      onTap: () => onSelectSavedSignature(item),
-                    );
-                  },
-                ),
-              ),
-
-            ],
           ] else ...[
             Stack(
               children: [
@@ -912,7 +865,6 @@ class _SignatureSection extends StatelessWidget {
                     ),
                   ),
                 ),
-
 
                 Positioned(
                   top: 8,
@@ -979,47 +931,3 @@ class _SignatureSection extends StatelessWidget {
     );
   }
 }
-
-class _QuickSavedSignatureCard extends StatelessWidget {
-  final SavedFileMeta meta;
-  final VoidCallback onTap;
-
-  const _QuickSavedSignatureCard({required this.meta, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final file = File(meta.filePath);
-
-    return Container(
-      width: 110,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: file.existsSync()
-                ? TrimmedSignatureImage(
-                    file: file,
-                    fit: BoxFit.contain,
-                    errorWidget: const Icon(
-                      Icons.draw_rounded,
-                      size: 20,
-                      color: Colors.grey,
-                    ),
-                  )
-                : const Icon(Icons.draw_rounded, size: 20, color: Colors.grey),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
