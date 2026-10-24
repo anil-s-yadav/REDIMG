@@ -126,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingTile(
                       icon: Icons.info_outline_rounded,
                       title: 'App Version',
-                      subtitle: '1.0.2',
+                      subtitle: '1.0.3',
                     ),
                     const Divider(height: 1),
                     _SettingTile(

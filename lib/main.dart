@@ -20,9 +20,14 @@ void main() async {
     ),
   );
 
-  // Initialize notifications core (timezone and notification plugin)
+  // Initialize notifications core and register daily alarms
   try {
-    await NotificationService.instance.init();
+    final notif = NotificationService.instance;
+    await notif.init();
+    final enabled = await notif.isEnabled();
+    if (enabled) {
+      await notif.scheduleDailyNotifications();
+    }
   } catch (e) {
     debugPrint('Notification init error in main: $e');
   }

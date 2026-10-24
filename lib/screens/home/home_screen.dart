@@ -121,6 +121,7 @@ class HomeScreen extends StatelessWidget {
                     child: _SmallToolCard(
                       title: 'Compress Image MB to KB',
                       icon: Icons.image,
+                      
                       accent: _HomeToolColors.compress,
                       onTap: () => context.push('/compress-image'),
                     ),
@@ -129,7 +130,7 @@ class HomeScreen extends StatelessWidget {
                   Expanded(
                     child: _SmallToolCard(
                       title: 'Combine \nPhoto + Signature',
-                      icon: Icons.layers_rounded,
+                      customIcon: const _CombineToolLayoutIcon(),
                       accent: _HomeToolColors.combine,
                       onTap: () => context.push('/combine-tool'),
                     ),
@@ -268,16 +269,18 @@ class _HighlightToolCard extends StatelessWidget {
 /// Small vertical tool card (Signature, Compress, Combine, Image to PDF).
 class _SmallToolCard extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final IconData? icon;
+  final Widget? customIcon;
   final Color accent;
   final VoidCallback? onTap;
 
   const _SmallToolCard({
     required this.title,
-    required this.icon,
+    this.icon,
+    this.customIcon,
     required this.accent,
     this.onTap,
-  });
+  }) : assert(icon != null || customIcon != null);
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +294,6 @@ class _SmallToolCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? cs.surfaceContainerLow : cs.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(18),
-          // border: Border.all(color: accent.withOpacity(isDark ? 0.35 : 0.22)),
           boxShadow: [
             BoxShadow(
               color: accent.withAlpha(30),
@@ -303,15 +305,18 @@ class _SmallToolCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: isDark ? 0.22 : 0.12),
-                borderRadius: BorderRadius.circular(12),
+            if (customIcon != null)
+              customIcon!
+            else
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: accent, size: 24),
               ),
-              child: Icon(icon, color: accent, size: 24),
-            ),
             const SizedBox(height: AppTheme.spaceSm),
             Text(
               title,
@@ -325,6 +330,140 @@ class _SmallToolCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Miniature document layout showing the Combine Photo + Signature output in color.
+class _CombineToolLayoutIcon extends StatelessWidget {
+  const _CombineToolLayoutIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const accent = _HomeToolColors.combine;
+
+    return Container(
+      width: 44,
+      height: 48,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: accent.withValues(alpha: isDark ? 0.75 : 0.55),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.3 : 0.16),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(2.5),
+      child: Column(
+        children: [
+          // ── Photo Area (Top ~70%) ──────────────────────────────
+          Expanded(
+            flex: 7,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFE0F2FE), // Soft passport sky blue backdrop
+                    Color(0xFFBAE6FD),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: const Color(0xFF7DD3FC),
+                  width: 0.8,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(
+                    Icons.person_rounded,
+                    size: 14,
+                    color: Color(0xFF0284C7), // Blue avatar
+                  ),
+                  SizedBox(height: 1),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 1.5),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Photo Area',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 5.2,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0369A1),
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          // ── Signature Area (Bottom ~30%) ───────────────────────
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFCBD5E1),
+                  width: 0.8,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.draw_rounded,
+                      size: 8,
+                      color: Color(0xFF16A34A), // Combine green
+                    ),
+                    SizedBox(width: 1.5),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Signature Area',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 4.8,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF15803D),
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

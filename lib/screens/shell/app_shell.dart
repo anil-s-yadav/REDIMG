@@ -28,9 +28,13 @@ class _AppShellState extends State<AppShell> {
       final notif = NotificationService.instance;
       final enabled = await notif.isEnabled();
       if (enabled) {
-        // Safe to request on Android 13+ now that Flutter Activity is mounted and active
-        await notif.requestPermission();
+        // Register daily alarms immediately in AlarmManager
         await notif.scheduleDailyNotifications();
+        // Request runtime permission on Android 13+ now that Flutter Activity is mounted
+        final granted = await notif.requestPermission();
+        if (granted) {
+          await notif.scheduleDailyNotifications();
+        }
       }
       await notif.checkLaunchNotification();
     } catch (e) {

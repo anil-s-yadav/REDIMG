@@ -56,32 +56,32 @@ class NotificationService {
       id: 101,
       hour: 10,
       minute: 0,
-      title: '🪪 Create Passport Photo in Seconds',
-      body: 'Standard photo sizes for exam forms, Aadhar, PAN & official IDs.',
+      title: 'Anil Yadav - click here',
+      body: 'Click use any feature and help me',
       route: '/passport-photo',
     ),
     DailyNotificationSlot(
       id: 102,
       hour: 14,
       minute: 0,
-      title: '📐 Resize Photos to Exact KB',
-      body: 'Quickly resize photos to 20KB, 50KB, 100KB or custom resolution.',
+      title: 'Anil Yadav - click here',
+      body: 'Click use any feature and help me',
       route: '/resize-image',
     ),
     DailyNotificationSlot(
       id: 103,
       hour: 18,
       minute: 0,
-      title: '🗜️ Compress Heavy Photos',
-      body: 'Reduce image file size by up to 90% without losing visual clarity.',
+      title: 'Anil Yadav - click here',
+      body: 'Click use any feature and help me',
       route: '/compress-image',
     ),
     DailyNotificationSlot(
       id: 104,
       hour: 21,
       minute: 0,
-      title: '✍️ Draw & Save Your Signature',
-      body: 'Create clean transparent signatures ready for online document signing.',
+      title: 'Anil Yadav - click here',
+      body: 'Click use any feature and help me',
       route: '/signature-maker',
     ),
   ];
@@ -112,22 +112,30 @@ class NotificationService {
     tz.initializeTimeZones();
     try {
       final tzInfo = await FlutterTimezone.getLocalTimezone();
-      final timeZoneName = tzInfo.identifier;
+      String timeZoneName = tzInfo.identifier;
+      if (timeZoneName == 'Asia/Calcutta') {
+        timeZoneName = 'Asia/Kolkata';
+      }
       if (tz.timeZoneDatabase.locations.containsKey(timeZoneName)) {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
         debugPrint('NotificationService: Local timezone set to $timeZoneName');
       } else {
+        tz.setLocalLocation(tz.getLocation('UTC'));
         debugPrint(
-          'NotificationService: Timezone $timeZoneName not in DB, fallback to local',
+          'NotificationService: Timezone $timeZoneName not in DB, fallback to UTC',
         );
       }
     } catch (e) {
       debugPrint('NotificationService: Timezone initialization error: $e');
+      try {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      } catch (_) {}
     }
 
     // 2. Platform initialization settings
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -147,8 +155,10 @@ class NotificationService {
 
     // 3. Android notification channel creation
     if (Platform.isAndroid) {
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidPlugin != null) {
         try {
           await androidPlugin.deleteNotificationChannel('redimg_reminders');
@@ -174,15 +184,20 @@ class NotificationService {
   Future<bool> requestPermission() async {
     await init();
     if (Platform.isAndroid) {
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       final granted =
           await androidPlugin?.requestNotificationsPermission() ?? false;
       return granted;
     } else if (Platform.isIOS) {
-      final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-      final granted = await iosPlugin?.requestPermissions(
+      final iosPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      final granted =
+          await iosPlugin?.requestPermissions(
             alert: true,
             badge: true,
             sound: true,
@@ -197,8 +212,10 @@ class NotificationService {
   Future<bool> areNotificationsEnabled() async {
     await init();
     if (Platform.isAndroid) {
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       return await androidPlugin?.areNotificationsEnabled() ?? false;
     }
     return true;
@@ -272,29 +289,10 @@ class NotificationService {
         return;
       }
 
-      final systemAllowed = await areNotificationsEnabled();
-      if (!systemAllowed) {
-        debugPrint(
-          'NotificationService: System notifications are not permitted. Skipping schedule.',
-        );
-        return;
-      }
-
-      // If already scheduled and not forced, verify slots are present
-      if (!force) {
-        final pending = await _plugin.pendingNotificationRequests();
-        final pendingIds = pending.map((e) => e.id).toSet();
-        final allSlotsActive =
-            _dailySlots.every((slot) => pendingIds.contains(slot.id));
-        if (allSlotsActive) {
-          debugPrint(
-            'NotificationService: All 4 daily notification slots are already scheduled and active.',
-          );
-          return;
-        }
-      }
-
-      // Schedule each slot
+      // Schedule/refresh all 4 daily slots in AlarmManager.
+      // We deliberately do not gate this on areNotificationsEnabled() so alarms
+      // exist in AlarmManager regardless of whether the user has answered the
+      // runtime prompt yet.
       for (final slot in _dailySlots) {
         // Cancel existing slot before rescheduling to avoid duplicates
         await _plugin.cancel(slot.id);
