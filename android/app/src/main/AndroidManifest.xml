@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Camera permission for capturing images with camera -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- System Photo Picker is used for picking images (Zero storage permissions required by Google Play) -->
     <!-- Explicitly block any plugin from injecting broad storage/media permissions -->
