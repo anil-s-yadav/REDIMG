@@ -106,8 +106,8 @@ class HomeScreen extends StatelessWidget {
 
               // Row 2: Resize Image to KB (full width)
               _HighlightToolCard(
-                title: 'Resize Image to KB',
-                subtitle: 'Precise file size targeting.',
+                title: 'Change height & width',
+                subtitle: 'Change image dimentions and compress too.',
                 icon: Icons.aspect_ratio_rounded,
                 accent: _HomeToolColors.resize,
                 onTap: () => context.push('/resize-image'),
@@ -119,19 +119,19 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _SmallToolCard(
-                      title: 'Signature Maker',
-                      icon: Icons.draw_rounded,
-                      accent: _HomeToolColors.signature,
-                      onTap: () => context.push('/signature-maker'),
+                      title: 'Compress Image MB to KB',
+                      icon: Icons.image,
+                      accent: _HomeToolColors.compress,
+                      onTap: () => context.push('/compress-image'),
                     ),
                   ),
                   const SizedBox(width: AppTheme.gutter),
                   Expanded(
                     child: _SmallToolCard(
-                      title: 'Compress Image',
-                      icon: Icons.image,
-                      accent: _HomeToolColors.compress,
-                      onTap: () => context.push('/compress-image'),
+                      title: 'Combine \nPhoto + Signature',
+                      icon: Icons.layers_rounded,
+                      accent: _HomeToolColors.combine,
+                      onTap: () => context.push('/combine-tool'),
                     ),
                   ),
                 ],
@@ -143,10 +143,10 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _SmallToolCard(
-                      title: 'Combine Photo\n+ Signature',
-                      icon: Icons.layers_rounded,
-                      accent: _HomeToolColors.combine,
-                      onTap: () => context.push('/combine-tool'),
+                      title: 'Signature Maker',
+                      icon: Icons.draw_rounded,
+                      accent: _HomeToolColors.signature,
+                      onTap: () => context.push('/signature-maker'),
                     ),
                   ),
                   const SizedBox(width: AppTheme.gutter),
