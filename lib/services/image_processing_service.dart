@@ -22,6 +22,7 @@ class ImageProcessingService {
     required Color backgroundColor,
     required int quality,
     required bool isPng,
+    int? targetKB,
   }) async {
     final inputFile = File(inputPath);
     if (!await inputFile.exists()) return null;
@@ -154,6 +155,43 @@ class ImageProcessingService {
           await outFile.writeAsBytes(compressedBytes);
         } else {
           await tempFile.copy(outPath);
+        }
+      } else if (targetKB != null && targetKB > 0) {
+        final targetBytes = targetKB * 1024;
+        int lo = 5;
+        int hi = 100;
+        Uint8List? bestBytes;
+        while (lo <= hi) {
+          final mid = (lo + hi) ~/ 2;
+          final compressed = await FlutterImageCompress.compressWithFile(
+            tempPath,
+            quality: mid,
+            format: CompressFormat.jpeg,
+          );
+          if (compressed != null) {
+            if (compressed.length <= targetBytes) {
+              bestBytes = compressed;
+              lo = mid + 1; // Try higher quality
+            } else {
+              hi = mid - 1; // Reduce quality
+            }
+          } else {
+            break;
+          }
+        }
+        if (bestBytes != null) {
+          await outFile.writeAsBytes(bestBytes);
+        } else {
+          final lowest = await FlutterImageCompress.compressWithFile(
+            tempPath,
+            quality: 5,
+            format: CompressFormat.jpeg,
+          );
+          if (lowest != null) {
+            await outFile.writeAsBytes(lowest);
+          } else {
+            return null;
+          }
         }
       } else {
         final compressedBytes = await FlutterImageCompress.compressWithFile(
