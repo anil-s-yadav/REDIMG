@@ -123,12 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SectionLabel('About'),
-                    _SettingTile(
-                      icon: Icons.info_outline_rounded,
-                      title: 'App Version',
-                      subtitle: '1.0.4',
-                    ),
-                    const Divider(height: 1),
+
                     _SettingTile(
                       icon: Icons.privacy_tip_outlined,
                       title: 'Privacy Policy',
@@ -155,16 +150,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const Divider(height: 1),
                     _SettingTile(
-                      icon: Icons.star_rate_rounded,
-                      title: 'Rate App',
-                      subtitle: 'Love REDIMG? Leave a review on Google Play',
-                      trailing: Icon(
-                        Icons.open_in_new_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      onTap: () => RateService.openPlayStore(),
+                      icon: Icons.info_outline_rounded,
+                      title: 'App Version',
+                      subtitle: '1.0.4',
                     ),
+                    // const Divider(height: 1),
+                    // _SettingTile(
+                    //   icon: Icons.star_rate_rounded,
+                    //   title: 'Rate App',
+                    //   subtitle: 'Love REDIMG? Leave a review on Google Play',
+                    //   trailing: Icon(
+                    //     Icons.open_in_new_rounded,
+                    //     size: 18,
+                    //     color: Theme.of(context).colorScheme.outline,
+                    //   ),
+                    //   onTap: () => RateService.openPlayStore(),
+                    // ),
                     const Divider(height: 1),
                     const SizedBox(height: AppTheme.spaceSm),
 
