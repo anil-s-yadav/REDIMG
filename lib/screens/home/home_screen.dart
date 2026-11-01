@@ -426,17 +426,20 @@ class _CombineToolLayoutIcon extends StatelessWidget {
                   width: 0.8,
                 ),
               ),
-              child: Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Signature',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 4.8,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF15803D),
-                      height: 1.0,
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Signature',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 4.8,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF15803D),
+                        height: 1.0,
+                      ),
                     ),
                   ),
                 ),

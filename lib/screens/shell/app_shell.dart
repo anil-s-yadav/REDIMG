@@ -46,10 +46,7 @@ class _AppShellState extends State<AppShell> {
     try {
       final info = await InAppUpdate.checkForUpdate();
       if (info.updateAvailability == UpdateAvailability.updateAvailable) {
-        if (info.flexibleUpdateAllowed) {
-          await InAppUpdate.startFlexibleUpdate();
-          await InAppUpdate.completeFlexibleUpdate();
-        } else if (info.immediateUpdateAllowed) {
+        if (info.immediateUpdateAllowed) {
           await InAppUpdate.performImmediateUpdate();
         }
       }

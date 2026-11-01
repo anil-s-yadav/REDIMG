@@ -6,12 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 
 /// Background simulation modes for viewing transparent signatures.
-enum SignatureViewBackground {
-  paperWhite,
-  checkerboard,
-  warmPaper,
-  dark,
-}
+enum SignatureViewBackground { paperWhite, checkerboard, warmPaper, dark }
 
 /// Shows an interactive, full-featured in-app viewer for saved signatures.
 ///
@@ -26,10 +21,8 @@ Future<void> showSignatureViewerModal(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _SignatureViewerModalContent(
-      meta: meta,
-      onDelete: onDelete,
-    ),
+    builder: (ctx) =>
+        _SignatureViewerModalContent(meta: meta, onDelete: onDelete),
   );
 }
 
@@ -37,10 +30,7 @@ class _SignatureViewerModalContent extends StatefulWidget {
   final SavedFileMeta meta;
   final VoidCallback? onDelete;
 
-  const _SignatureViewerModalContent({
-    required this.meta,
-    this.onDelete,
-  });
+  const _SignatureViewerModalContent({required this.meta, this.onDelete});
 
   @override
   State<_SignatureViewerModalContent> createState() =>
@@ -51,6 +41,7 @@ class _SignatureViewerModalContentState
     extends State<_SignatureViewerModalContent> {
   SignatureViewBackground _bgMode = SignatureViewBackground.paperWhite;
   Size? _imageDimensions;
+  bool _isGalleryHelpExpanded = false;
 
   @override
   void initState() {
@@ -142,9 +133,7 @@ class _SignatureViewerModalContentState
                               widget.meta.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: cs.onSurface,
@@ -193,10 +182,7 @@ class _SignatureViewerModalContentState
             ),
           ),
           const SizedBox(height: 8),
-          Divider(
-            height: 1,
-            color: cs.outlineVariant.withValues(alpha: 0.3),
-          ),
+          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
 
           // ── Main Content ────────────────────────────────────────
           Expanded(
@@ -235,9 +221,7 @@ class _SignatureViewerModalContentState
                           ),
                         )
                       else
-                        Positioned.fill(
-                          child: Container(color: _canvasColor),
-                        ),
+                        Positioned.fill(child: Container(color: _canvasColor)),
 
                       // Interactive Signature image
                       Positioned.fill(
@@ -340,26 +324,33 @@ class _SignatureViewerModalContentState
                           children: [
                             _BgChoiceChip(
                               label: '📄 White Paper',
-                              isSelected: _bgMode ==
-                                  SignatureViewBackground.paperWhite,
-                              onTap: () => setState(() =>
-                                  _bgMode = SignatureViewBackground.paperWhite),
+                              isSelected:
+                                  _bgMode == SignatureViewBackground.paperWhite,
+                              onTap: () => setState(
+                                () => _bgMode =
+                                    SignatureViewBackground.paperWhite,
+                              ),
                             ),
                             const SizedBox(width: 6),
                             _BgChoiceChip(
                               label: '🏁 Transparent Grid',
-                              isSelected: _bgMode ==
+                              isSelected:
+                                  _bgMode ==
                                   SignatureViewBackground.checkerboard,
-                              onTap: () => setState(() => _bgMode =
-                                  SignatureViewBackground.checkerboard),
+                              onTap: () => setState(
+                                () => _bgMode =
+                                    SignatureViewBackground.checkerboard,
+                              ),
                             ),
                             const SizedBox(width: 6),
                             _BgChoiceChip(
                               label: '📜 Cream Paper',
                               isSelected:
                                   _bgMode == SignatureViewBackground.warmPaper,
-                              onTap: () => setState(() =>
-                                  _bgMode = SignatureViewBackground.warmPaper),
+                              onTap: () => setState(
+                                () =>
+                                    _bgMode = SignatureViewBackground.warmPaper,
+                              ),
                             ),
                             const SizedBox(width: 6),
                             _BgChoiceChip(
@@ -367,7 +358,8 @@ class _SignatureViewerModalContentState
                               isSelected:
                                   _bgMode == SignatureViewBackground.dark,
                               onTap: () => setState(
-                                  () => _bgMode = SignatureViewBackground.dark),
+                                () => _bgMode = SignatureViewBackground.dark,
+                              ),
                             ),
                           ],
                         ),
@@ -377,9 +369,8 @@ class _SignatureViewerModalContentState
                 ),
                 const SizedBox(height: AppTheme.spaceMd),
 
-                // ── Why does it look black in Gallery? Banner ────────
+                // ── Why does it look black in Gallery? Expandable Banner ────────
                 Container(
-                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.primaryContainer.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -387,49 +378,88 @@ class _SignatureViewerModalContentState
                       color: AppColors.primaryContainer.withValues(alpha: 0.2),
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 20,
-                        color: cs.primaryContainer,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
+                  clipBehavior: Clip.antiAlias,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _isGalleryHelpExpanded = !_isGalleryHelpExpanded;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Why external gallery shows black on black?',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: cs.primaryContainer,
-                              ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 18,
+                                  color: cs.primaryContainer,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Why external gallery shows black on black?',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: cs.primaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                AnimatedRotation(
+                                  turns: _isGalleryHelpExpanded ? 0.5 : 0.0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 20,
+                                    color: cs.primaryContainer,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Your signature is saved with transparent background & black ink (perfect for official forms & documents). External gallery viewers (Google Photos) display transparent PNGs on a black canvas in dark mode, making black ink blend in. Your signature is 100% intact!',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: cs.onSurfaceVariant,
-                                height: 1.4,
+                            AnimatedCrossFade(
+                              firstChild: const SizedBox(
+                                width: double.infinity,
                               ),
+                              secondChild: Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 8,
+                                  left: 26,
+                                ),
+                                child: Text(
+                                  'Your signature is saved with transparent background & black ink (perfect for official forms & documents). External gallery viewers (Google Photos) display transparent PNGs on a black canvas in dark mode, making black ink blend in. Your signature is 100% intact!',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11,
+                                    color: cs.onSurfaceVariant,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                              crossFadeState: _isGalleryHelpExpanded
+                                  ? CrossFadeState.showSecond
+                                  : CrossFadeState.showFirst,
+                              duration: const Duration(milliseconds: 200),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppTheme.spaceMd),
 
                 // ── File Metadata Card ───────────────────────────────
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
                     color: isDark
                         ? cs.surfaceContainerLowest
@@ -443,19 +473,19 @@ class _SignatureViewerModalContentState
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _MetaItem(
-                        icon: Icons.aspect_ratio_rounded,
+                        // icon: Icons.aspect_ratio_rounded,
                         label: 'Dimensions',
                         value: _imageDimensions != null
                             ? '${_imageDimensions!.width.toInt()} × ${_imageDimensions!.height.toInt()} px'
                             : 'Loading…',
                       ),
                       _MetaItem(
-                        icon: Icons.straighten_rounded,
+                        // icon: Icons.straighten_rounded,
                         label: 'File Size',
                         value: widget.meta.formattedSize,
                       ),
                       _MetaItem(
-                        icon: Icons.schedule_rounded,
+                        // icon: Icons.schedule_rounded,
                         label: 'Saved',
                         value: widget.meta.formattedDate,
                       ),
@@ -587,12 +617,12 @@ class _BgChoiceChip extends StatelessWidget {
 }
 
 class _MetaItem extends StatelessWidget {
-  final IconData icon;
+  // final IconData icon;
   final String label;
   final String value;
 
   const _MetaItem({
-    required this.icon,
+    // required this.icon,
     required this.label,
     required this.value,
   });
@@ -603,8 +633,8 @@ class _MetaItem extends StatelessWidget {
 
     return Column(
       children: [
-        Icon(icon, size: 18, color: cs.primaryContainer),
-        const SizedBox(height: 4),
+        // Icon(icon, size: 18, color: cs.primaryContainer),
+        // const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(

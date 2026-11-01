@@ -104,6 +104,7 @@ final GoRouter appRouter = GoRouter(
             toolName: extra['toolName'] as String? ?? '',
             outputFormat: extra['outputFormat'] as String? ?? 'png',
             fileName: extra['fileName'] as String?,
+            previewImagePath: extra['previewImagePath'] as String?,
           ),
           transitionsBuilder: _slideTransition,
         );

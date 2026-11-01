@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:signature/signature.dart';
@@ -8,7 +9,6 @@ import '../../services/file_service.dart';
 import '../../services/image_processing_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
-import '../../widgets/signature_picker_sheet.dart';
 
 /// Signature Maker screen matching premium_signature_maker design.
 class SignatureMakerScreen extends StatefulWidget {
@@ -48,12 +48,21 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
   }
 
   Future<void> _uploadSignature() async {
-    final chosen = await showSignaturePickerSheet(context);
-    if (chosen != null && mounted) {
-      setState(() {
-        _uploadedSignature = chosen;
-        _signatureController.clear();
-      });
+    try {
+      final picker = ImagePicker();
+      final xFile = await picker.pickImage(source: ImageSource.gallery);
+      if (xFile != null && mounted) {
+        setState(() {
+          _uploadedSignature = File(xFile.path);
+          _signatureController.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error selecting image: $e')));
+      }
     }
   }
 
@@ -194,11 +203,10 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
                         ),
                         const Spacer(),
                         _ToolButton(
-                          icon: Icons.upload_rounded,
+                          icon: Icons.photo_library_outlined,
                           label: 'Upload',
-                          sublabel: 'Transparent\nPNG preferred',
+
                           onTap: _uploadSignature,
-                          width: 100,
                         ),
                         const SizedBox(width: 12),
                         _ToolButton(
@@ -354,24 +362,16 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
 class _ToolButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String? sublabel;
-  final VoidCallback? onTap;
-  final double? width;
 
-  const _ToolButton({
-    required this.icon,
-    required this.label,
-    this.sublabel,
-    this.onTap,
-    this.width,
-  });
+  final VoidCallback? onTap;
+
+  const _ToolButton({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: width,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -400,17 +400,6 @@ class _ToolButton extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            if (sublabel != null)
-              Text(
-                sublabel!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 9,
-                  fontWeight: FontWeight.w300,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-              ),
           ],
         ),
       ),

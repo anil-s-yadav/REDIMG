@@ -84,10 +84,10 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
 
     setState(() => _isGenerating = false);
 
-    if (result != null && mounted) {
-      final fileSize = ImageProcessingService.formatFileSize(
-        await result.length(),
-      );
+    if (result != null) {
+      final length = await result.length();
+      if (!mounted) return;
+      final fileSize = ImageProcessingService.formatFileSize(length);
       context.push(
         '/result',
         extra: {
@@ -98,6 +98,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
           'toolName': 'Image to PDF',
           'outputFormat': 'pdf',
           'fileName': finalPdfName,
+          'previewImagePath': _images.isNotEmpty ? _images.first.path : null,
         },
       );
     }

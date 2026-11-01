@@ -186,9 +186,10 @@ class _CombineToolScreenState extends State<CombineToolScreen> {
               'filePath': outFile.path,
               'fileSize': fileSize,
               'dimensions': '${image.width} × ${image.height} px',
-              'format': 'PNG',
+              'format': _outputFormat == OutputFormat.pdf ? 'PDF' : 'PNG',
               'toolName': 'Combine Photo + Signature',
               'outputFormat': _outputFormat.name,
+              'previewImagePath': outFile.path,
             },
           );
         }

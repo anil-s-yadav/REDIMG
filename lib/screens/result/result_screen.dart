@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../services/file_service.dart';
+import '../../services/pdf_service.dart';
 import '../../services/rate_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
@@ -18,6 +21,7 @@ class ResultScreen extends StatefulWidget {
   final String toolName;
   final String outputFormat; // 'png', 'jpeg', or 'pdf'
   final String? fileName;
+  final String? previewImagePath;
 
   const ResultScreen({
     super.key,
@@ -29,6 +33,7 @@ class ResultScreen extends StatefulWidget {
     this.toolName = '',
     this.outputFormat = 'png',
     this.fileName,
+    this.previewImagePath,
   });
 
   @override
@@ -41,6 +46,12 @@ class _ResultScreenState extends State<ResultScreen> {
   String _savedPath = '';
   bool _isSaving = false;
   String _errorMessage = '';
+  Uint8List? _pdfPreviewBytes;
+
+  bool get _isPdf =>
+      widget.filePath.toLowerCase().endsWith('.pdf') ||
+      _savedPath.toLowerCase().endsWith('.pdf') ||
+      _outputFormat == OutputFormat.pdf;
 
   OutputFormat get _outputFormat {
     switch (widget.outputFormat.toLowerCase()) {
@@ -58,6 +69,75 @@ class _ResultScreenState extends State<ResultScreen> {
   void initState() {
     super.initState();
     _autoSave();
+    if (_isPdf) {
+      _loadPdfPreview();
+    }
+  }
+
+  Future<void> _loadPdfPreview() async {
+    if (_pdfPreviewBytes != null) return;
+
+    final targetPath = widget.filePath.toLowerCase().endsWith('.pdf')
+        ? widget.filePath
+        : (_savedPath.toLowerCase().endsWith('.pdf') ? _savedPath : null);
+
+    if (targetPath != null && File(targetPath).existsSync()) {
+      try {
+        final bytes = await PdfService.renderPdfPreview(targetPath);
+        if (mounted) {
+          setState(() {
+            _pdfPreviewBytes = bytes;
+          });
+        }
+      } catch (e) {
+        debugPrint('ResultScreen: Error loading PDF preview: $e');
+      }
+    }
+  }
+
+  Future<void> _openFileExternally() async {
+    final targetPath = _savedPath.isNotEmpty && File(_savedPath).existsSync()
+        ? _savedPath
+        : widget.filePath;
+
+    if (!File(targetPath).existsSync()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${_isPdf ? 'PDF' : 'File'} is still saving, please wait a moment...',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final result = await FileService.openFile(targetPath);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message.isNotEmpty
+                  ? result.message
+                  : 'Could not open file viewer on this device',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening file: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _autoSave() async {
@@ -90,6 +170,9 @@ class _ResultScreenState extends State<ResultScreen> {
           _saveFailed = false;
           _savedPath = saved.path;
         });
+        if (_isPdf && _pdfPreviewBytes == null) {
+          _loadPdfPreview();
+        }
         // Prompt user to rate the app after any successful action
         RateService.showRatePromptIfEligible(context);
       }
@@ -145,7 +228,8 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isImage = !widget.filePath.toLowerCase().endsWith('.pdf');
+    final isPdf = _isPdf;
+    final isImage = !isPdf;
     final file = File(widget.filePath);
 
     return Scaffold(
@@ -300,122 +384,150 @@ class _ResultScreenState extends State<ResultScreen> {
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
-                    // Image preview
+                    // Image or PDF preview
                     Builder(
                       builder: (context) {
-                        final isSignature = widget.toolName
-                                .toLowerCase()
-                                .contains('signature') ||
+                        final isSignature =
+                            widget.toolName.toLowerCase().contains(
+                              'signature',
+                            ) ||
                             widget.filePath.toLowerCase().contains('sign');
-                        return Container(
-                          width: double.infinity,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(AppTheme.radiusMd),
-                            color: isSignature
-                                ? Colors.white
-                                : cs.surfaceContainer,
-                            border: isSignature
-                                ? Border.all(
-                                    color: cs.outlineVariant
-                                        .withValues(alpha: 0.6),
-                                  )
-                                : null,
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          padding: isSignature
-                              ? const EdgeInsets.all(10)
-                              : EdgeInsets.zero,
-                          child: isImage && file.existsSync()
-                              ? (isSignature
-                                  ? GestureDetector(
-                                      onTap: () {
-                                        final meta = SavedFileMeta(
-                                          filePath: _savedPath.isNotEmpty
-                                              ? _savedPath
-                                              : widget.filePath,
-                                          name: widget.fileName ??
-                                              file.uri.pathSegments.last,
-                                          toolName: widget.toolName,
-                                          format: widget.format,
-                                          sizeBytes: file.existsSync()
-                                              ? file.lengthSync()
-                                              : 0,
-                                          savedAt: DateTime.now(),
-                                        );
-                                        showSignatureViewerModal(
-                                          context,
-                                          meta: meta,
-                                        );
-                                      },
-                                      child: Stack(
+                        final hasPreviewImage =
+                            widget.previewImagePath != null &&
+                            File(widget.previewImagePath!).existsSync();
+
+                        Widget content;
+                        if (isImage && file.existsSync()) {
+                          if (isSignature) {
+                            content = GestureDetector(
+                              onTap: () {
+                                final meta = SavedFileMeta(
+                                  filePath: _savedPath.isNotEmpty
+                                      ? _savedPath
+                                      : widget.filePath,
+                                  name:
+                                      widget.fileName ??
+                                      file.uri.pathSegments.last,
+                                  toolName: widget.toolName,
+                                  format: widget.format,
+                                  sizeBytes: file.existsSync()
+                                      ? file.lengthSync()
+                                      : 0,
+                                  savedAt: DateTime.now(),
+                                );
+                                showSignatureViewerModal(context, meta: meta);
+                              },
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: Image.file(
+                                      file,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black45,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Center(
-                                            child: Image.file(
-                                              file,
-                                              fit: BoxFit.contain,
-                                            ),
+                                          Icon(
+                                            Icons.fullscreen_rounded,
+                                            size: 14,
+                                            color: Colors.white,
                                           ),
-                                          Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black45,
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.fullscreen_rounded,
-                                                    size: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                  SizedBox(width: 2),
-                                                  Text(
-                                                    'Tap to View',
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'Tap to View',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
                                             ),
                                           ),
                                         ],
                                       ),
-                                    )
-                                  : Image.file(file, fit: BoxFit.contain))
-                              : Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.picture_as_pdf_rounded,
-                                        size: 48,
-                                        color: cs.primaryContainer,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'PDF Document',
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 13,
-                                          color: cs.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            content = Image.file(file, fit: BoxFit.contain);
+                          }
+                        } else if (_pdfPreviewBytes != null) {
+                          content = Center(
+                            child: Image.memory(
+                              _pdfPreviewBytes!,
+                              fit: BoxFit.contain,
+                            ),
+                          );
+                        } else if (hasPreviewImage) {
+                          content = Center(
+                            child: Image.file(
+                              File(widget.previewImagePath!),
+                              fit: BoxFit.contain,
+                            ),
+                          );
+                        } else {
+                          content = Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.picture_as_pdf_rounded,
+                                  size: 48,
+                                  color: cs.primaryContainer,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'PDF Document',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 13,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return GestureDetector(
+                          onTap: isSignature ? null : _openFileExternally,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: double.infinity,
+                            height: 160,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusMd,
+                              ),
+                              color: isSignature
+                                  ? Colors.white
+                                  : cs.surfaceContainer,
+                              border: isSignature
+                                  ? Border.all(
+                                      color: cs.outlineVariant.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            padding: isSignature
+                                ? const EdgeInsets.all(10)
+                                : EdgeInsets.zero,
+                            child: content,
+                          ),
                         );
                       },
                     ),
@@ -532,7 +644,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
               const SizedBox(height: 10),
 
-              // ── Save Again Button ───────────────────────────────
+              // ── Action Buttons ──────────────────────────────────
               PrimaryActionButton(
                 label: 'Save Again',
                 icon: Icons.save_rounded,
@@ -556,8 +668,10 @@ class _ResultScreenState extends State<ResultScreen> {
                         subject: widget.toolName,
                       ),
                       icon: const Icon(Icons.share_rounded, size: 16),
-                      label:
-                          const Text('Share', style: TextStyle(fontSize: 13)),
+                      label: const Text(
+                        'Share',
+                        style: TextStyle(fontSize: 13),
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppTheme.spaceSm),
@@ -569,8 +683,10 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                       onPressed: () => context.pop(),
                       icon: const Icon(Icons.edit_rounded, size: 16),
-                      label: const Text('Edit Again',
-                          style: TextStyle(fontSize: 13)),
+                      label: const Text(
+                        'Edit Again',
+                        style: TextStyle(fontSize: 13),
+                      ),
                     ),
                   ),
                 ],
@@ -581,13 +697,17 @@ class _ResultScreenState extends State<ResultScreen> {
               TextButton.icon(
                 style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 2,
+                    horizontal: 8,
+                  ),
                 ),
                 onPressed: () => context.go('/home'),
                 icon: const Icon(Icons.arrow_back_rounded, size: 15),
-                label: const Text('Back to Dashboard',
-                    style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  'Back to Dashboard',
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
               const SizedBox(height: 6),
             ],

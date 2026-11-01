@@ -1,13 +1,18 @@
 package com.redpdf.resize_image_to_kb
 
 import android.content.ContentValues
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.pdf.PdfRenderer
 import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 
@@ -77,9 +82,68 @@ class MainActivity : FlutterActivity() {
                         }
                     }
 
+                    "renderPdfPreview" -> {
+                        val filePath = call.argument<String>("path")
+                        val maxWidth = call.argument<Int>("maxWidth") ?: 800
+                        if (filePath == null) {
+                            result.error("INVALID_ARGUMENT", "File path is required", null)
+                            return@setMethodCallHandler
+                        }
+
+                        Thread {
+                            try {
+                                val bytes = renderPdfFirstPage(filePath, maxWidth)
+                                runOnUiThread {
+                                    if (bytes != null) {
+                                        result.success(bytes)
+                                    } else {
+                                        result.error("RENDER_ERROR", "Could not render PDF", null)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                runOnUiThread {
+                                    result.error("RENDER_ERROR", e.message, null)
+                                }
+                            }
+                        }.start()
+                    }
+
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    /**
+     * Render the first page of a PDF file to a JPEG byte array.
+     */
+    private fun renderPdfFirstPage(filePath: String, maxWidth: Int): ByteArray? {
+        val file = File(filePath)
+        if (!file.exists()) return null
+
+        val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) ?: return null
+        var renderer: PdfRenderer? = null
+        var page: PdfRenderer.Page? = null
+        try {
+            renderer = PdfRenderer(pfd)
+            if (renderer.pageCount == 0) return null
+
+            page = renderer.openPage(0)
+            val renderWidth = maxWidth.coerceIn(200, 1080)
+            val renderHeight = (renderWidth.toFloat() / page.width * page.height).toInt().coerceAtLeast(100)
+            val bitmap = Bitmap.createBitmap(renderWidth, renderHeight, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.WHITE)
+            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+            val byteArray = stream.toByteArray()
+            bitmap.recycle()
+            return byteArray
+        } finally {
+            try { page?.close() } catch (_: Exception) {}
+            try { renderer?.close() } catch (_: Exception) {}
+            try { pfd.close() } catch (_: Exception) {}
+        }
     }
 
     /**

@@ -6,7 +6,6 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
 import '../../services/notification_service.dart';
-import '../../services/rate_service.dart';
 
 /// Settings screen.
 class SettingsScreen extends StatefulWidget {
