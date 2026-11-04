@@ -151,7 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _SettingTile(
                       icon: Icons.info_outline_rounded,
                       title: 'App Version',
-                      subtitle: '1.0.4',
+                      subtitle: '1.0.5',
                     ),
                     // const Divider(height: 1),
                     // _SettingTile(
@@ -419,22 +419,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(5, (i) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 3,
                                 ),
                                 child: Icon(
                                   Icons.star_rounded,
                                   size: 28,
-                                  color: const Color(0xFFFBBF24),
-                                  shadows: [
-                                    Shadow(
-                                      color: const Color(
-                                        0xFFFBBF24,
-                                      ).withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
+                                  color: Color(0xFFFBBF24),
                                 ),
                               );
                             }),

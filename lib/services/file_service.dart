@@ -417,7 +417,12 @@ class FileService {
 
   /// Share a file using the system share sheet.
   static Future<void> shareFile(String filePath, {String? subject}) async {
-    await Share.shareXFiles([XFile(filePath)], subject: subject);
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(filePath)],
+        subject: subject,
+      ),
+    );
   }
 
   /// Get file info (size, name, etc.)
@@ -435,7 +440,11 @@ class FileService {
   }
 
   /// Open a file in an external application.
-  static Future<OpenResult> openFile(String filePath) async {
-    return await OpenFilex.open(filePath);
+  static Future<OpenResult> openFile(String filePath, {String? type}) async {
+    final mime = type ?? _getMimeType(filePath);
+    return await OpenFilex.open(
+      filePath,
+      type: mime != 'application/octet-stream' ? mime : null,
+    );
   }
 }

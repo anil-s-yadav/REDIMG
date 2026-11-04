@@ -71,10 +71,16 @@ class _PassportPhotoScreenState extends State<PassportPhotoScreen> {
 
     setState(() => _isProcessing = false);
 
-    if (result != null && mounted) {
-      final fileSize = ImageProcessingService.formatFileSize(
-        await result.length(),
-      );
+    if (result != null) {
+      final fileLength = await result.length();
+      String origSize = '';
+      if (_selectedImage != null) {
+        origSize = ImageProcessingService.formatFileSize(
+          await _selectedImage!.length(),
+        );
+      }
+      if (!mounted) return;
+      final fileSize = ImageProcessingService.formatFileSize(fileLength);
       context.push(
         '/result',
         extra: {
@@ -82,11 +88,7 @@ class _PassportPhotoScreenState extends State<PassportPhotoScreen> {
           'fileSize': fileSize,
           'dimensions': '${preset.widthMm}x${preset.heightMm} mm',
           'format': 'JPEG',
-          'originalSize': _selectedImage != null
-              ? ImageProcessingService.formatFileSize(
-                  await _selectedImage!.length(),
-                )
-              : '',
+          'originalSize': origSize,
           'toolName': 'Passport Photo Maker',
           'outputFormat': _outputFormat.name,
         },

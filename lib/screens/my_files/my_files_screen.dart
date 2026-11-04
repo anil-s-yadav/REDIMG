@@ -273,7 +273,9 @@ class _FileCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            if (meta.category == 'signature') {
+            final isPdf = meta.filePath.toLowerCase().endsWith('.pdf') ||
+                meta.format.toLowerCase() == 'pdf';
+            if (meta.category == 'signature' && !isPdf) {
               showSignatureViewerModal(
                 context,
                 meta: meta,
@@ -415,7 +417,9 @@ class _FileCard extends StatelessWidget {
                     if (value == 'delete') onDelete();
                   },
                   itemBuilder: (_) => [
-                    if (meta.category == 'signature')
+                    if (meta.category == 'signature' &&
+                        !meta.filePath.toLowerCase().endsWith('.pdf') &&
+                        meta.format.toLowerCase() != 'pdf')
                       const PopupMenuItem(
                         value: 'view',
                         child: Row(

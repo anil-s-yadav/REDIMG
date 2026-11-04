@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 import 'package:signature/signature.dart';
 import '../../services/file_service.dart';
 import '../../services/image_processing_service.dart';
+import '../../services/pdf_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -125,7 +126,8 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
       }
 
       if (outputFile != null) {
-        final fileLength = await outputFile.length();
+        File finalFile = outputFile;
+        final previewImagePath = outputFile.path;
         int imgW = 0;
         int imgH = 0;
         try {
@@ -136,17 +138,32 @@ class _SignatureMakerScreenState extends State<SignatureMakerScreen> {
           imgH = decoded.height;
         } catch (_) {}
 
+        if (_outputFormat == OutputFormat.pdf) {
+          final pdfFile = await PdfService.imagesToPdf(
+            imagePaths: [outputFile.path],
+            outputFileName: 'signature_${DateTime.now().millisecondsSinceEpoch}',
+          );
+          if (pdfFile != null) {
+            finalFile = pdfFile;
+          }
+        }
+
+        final fileLength = await finalFile.length();
+
         if (mounted) {
           final fileSize = ImageProcessingService.formatFileSize(fileLength);
           context.push(
             '/result',
             extra: {
-              'filePath': outputFile.path,
+              'filePath': finalFile.path,
               'fileSize': fileSize,
-              'dimensions': imgW > 0 ? '$imgW × $imgH px' : 'Auto',
-              'format': 'PNG',
+              'dimensions': _outputFormat == OutputFormat.pdf
+                  ? '1 page'
+                  : (imgW > 0 ? '$imgW × $imgH px' : 'Auto'),
+              'format': _outputFormat.name.toUpperCase(),
               'toolName': 'Signature Maker',
               'outputFormat': _outputFormat.name,
+              'previewImagePath': previewImagePath,
             },
           );
         }

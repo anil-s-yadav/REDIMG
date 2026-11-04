@@ -46,7 +46,6 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
 
   void _reorderImages(int oldIndex, int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
       final item = _images.removeAt(oldIndex);
       _images.insert(newIndex, item);
     });
@@ -173,7 +172,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _images.length,
-                  onReorder: _reorderImages,
+                  onReorderItem: _reorderImages,
                   proxyDecorator: (child, index, animation) {
                     return AnimatedBuilder(
                       animation: animation,

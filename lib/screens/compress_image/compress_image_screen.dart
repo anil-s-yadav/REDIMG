@@ -74,10 +74,10 @@ class _CompressImageScreenState extends State<CompressImageScreen> {
 
     setState(() => _isCompressing = false);
 
-    if (result != null && mounted) {
-      final fileSize = ImageProcessingService.formatFileSize(
-        await result.length(),
-      );
+    if (result != null) {
+      final fileLength = await result.length();
+      if (!mounted) return;
+      final fileSize = ImageProcessingService.formatFileSize(fileLength);
       context.push(
         '/result',
         extra: {
